@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -14,9 +15,8 @@ public class ShieldMeshGenerator : MonoBehaviour
 
     private int kernelTriangleClmp;
     private int kernelGetNextTriangle;
-    private int kernelClearTriangleClumps;
 
-    public ComputeShader triangleClumpShader;
+    private ComputeShader triangleClumpShader;
 
     public void GenerateShieldMesh()
     {
@@ -26,8 +26,6 @@ public class ShieldMeshGenerator : MonoBehaviour
         }
         kernelTriangleClmp = triangleClumpShader.FindKernel("TriangleClmp");
         kernelGetNextTriangle = triangleClumpShader.FindKernel("GetNextTriangle");
-        kernelClearTriangleClumps = triangleClumpShader.FindKernel("ClearTriangleClumps");
-        
         
         if (mesh == null)
         {
@@ -35,11 +33,12 @@ public class ShieldMeshGenerator : MonoBehaviour
             return;
         }
         
-        ClearCustomMeshData();
+        //ClearCustomMeshData();
 
-        //Mesh newMesh = mesh.CopyMesh();
-        Mesh newMesh = mesh;
+        Mesh newMesh = mesh.CopyMesh();
+        //Mesh newMesh = mesh;
         newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 1, 1));
+        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 2, 2));
         newMesh.vertexBufferTarget |= GraphicsBuffer.Target.Structured;
         newMesh.indexBufferTarget |= GraphicsBuffer.Target.Structured;
         
@@ -133,47 +132,15 @@ public class ShieldMeshGenerator : MonoBehaviour
             }
             
         }
-        // float[] testIndex = new float[parentIndexBuffer.count];
-        // parentIndexBuffer.GetData(testIndex);
+        
+        AssetDatabase.CreateAsset( newMesh, "Assets/4ShieldMeshGenerator/GeneratedMeshes/" + newMesh.name + ".asset");
+        AssetDatabase.SaveAssets();
         
         indexBuffer?.Dispose();
         vertexBuffer?.Dispose();
         parentIndexBuffer.Dispose();
         hexagonEdgeAppendBuffer.Dispose();
         nextTriangleBuffer.Dispose();
-    }
-
-    public void ClearCustomMeshData()
-    {
-        if (triangleClumpShader == null)
-        {
-            triangleClumpShader = Resources.Load<ComputeShader>("TriangleClumper");
-        }
-        kernelTriangleClmp = triangleClumpShader.FindKernel("TriangleClmp");
-        kernelGetNextTriangle = triangleClumpShader.FindKernel("GetNextTriangle");
-        kernelClearTriangleClumps = triangleClumpShader.FindKernel("ClearTriangleClumps");
-        
-        if (mesh == null)
-        {
-            Debug.LogWarning($"No mesh selected");
-            return;
-        }
-        
-        //Mesh newMesh = mesh.CopyMesh();
-        Mesh newMesh = mesh;
-        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 1, 1));
-        newMesh.vertexBufferTarget |= GraphicsBuffer.Target.Structured;
-        
-        GraphicsBuffer parentIndexBuffer = newMesh.GetVertexBuffer(1);
-        
-        triangleClumpShader.GetKernelThreadGroupSizes(1, out uint x, out uint y, out uint z);
-        for (int i = 0; i < newMesh.subMeshCount; i++)
-        {
-            int xThreadGroup = Mathf.CeilToInt((float)newMesh.vertexCount / x);
-            triangleClumpShader.SetBuffer(kernelClearTriangleClumps, "_VertexParentIndex", parentIndexBuffer);
-            triangleClumpShader.Dispatch(kernelClearTriangleClumps, xThreadGroup, 1, 1);
-        }
-        parentIndexBuffer?.Dispose();
     }
     
     private struct Triangle

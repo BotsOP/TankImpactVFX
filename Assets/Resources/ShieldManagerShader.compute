@@ -1,0 +1,58 @@
+#pragma kernel HitShield
+#pragma kernel UpdateShield
+
+float3 hitPos;
+float hitSize;
+float damage;
+float maxHealth;
+
+struct Vertex
+{
+    float3 position;
+    float3 normal;
+};
+
+struct HexagonStats
+{
+    float health;
+    float shockWaveHealth;
+};
+
+StructuredBuffer<Vertex> _VertexBuffer;
+StructuredBuffer<float> _VertexParentIndex;
+StructuredBuffer<uint2> _HexagonStats;
+
+[numthreads(512,1,1)]
+void HitShield (uint id : SV_DispatchThreadID)
+{
+    uint v1Index = id * 3;
+    uint v2Index = id * 3 + 1;
+    uint v3Index = id * 3 + 2;
+
+    Vertex vertex1 = _VertexBuffer[v1Index];
+    Vertex vertex2 = _VertexBuffer[v2Index];
+    Vertex vertex3 = _VertexBuffer[v3Index];
+
+    float distV1 = distance(vertex1.position, hitPos);
+    float distV2 = distance(vertex2.position, hitPos);
+    float distV3 = distance(vertex3.position, hitPos);
+
+    float lowestDist = min(min(distV1, distV2), distV3);
+    if(lowestDist < hitSize)
+    {
+        int parentIndex = (int)_VertexParentIndex[v1Index];
+        float health = _HexagonStats[parentIndex].health - damage;
+        InterlockedMin(_HexagonStats[parentIndex].health, health);
+        float shockWaveHealth = lowestDist / hitSize;
+        InterlockedMax(_HexagonStats[parentIndex].shockWaveHealth, shockWaveHealth);
+    }
+}
+
+[numthreads(512,1,1)]
+void UpdateShield (uint id : SV_DispatchThreadID)
+{
+    uint v1Index = id * 3;
+    int parentIndex = (int)_VertexParentIndex[v1Index];
+    float shockWaveHealth = _HexagonStats[parentIndex].shockWaveHealth;
+    InterlockedMin(_HexagonStats[parentIndex].shockWaveHealth, shockWaveHealth - damage);
+}
