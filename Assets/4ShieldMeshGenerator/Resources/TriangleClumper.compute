@@ -1,0 +1,154 @@
+#pragma kernel TriangleClmp
+#pragma kernel GetNextTriangle
+#pragma kernel ClearTriangleClumps
+
+static const float HIGH_NUMBER = 99999999999999999999999999999999999999.0;
+static const float SMALL_NUMBER = 0.000000001;
+
+struct Vertex
+{
+	float3 position;
+	float3 normal;
+};
+
+struct Triangle
+{
+	float3 position1;
+	float3 position2;
+	float3 position3;
+};
+
+StructuredBuffer<Vertex> _VertexBuffer;
+StructuredBuffer<uint> _IndexBuffer;
+RWStructuredBuffer<float> _VertexParentIndex;
+AppendStructuredBuffer<Triangle> _HexagonEdgeAppend;
+RWStructuredBuffer<int> newTriangleIndex;
+RWStructuredBuffer<int> _HexagonEdgeCounter;
+int _ParentTriangleIndex;
+
+float3 _HexagonEdge1;
+float3 _HexagonEdge2;
+
+[numthreads(512,1,1)]
+void TriangleClmp (uint id : SV_DispatchThreadID)
+{
+	Vertex vertexParent = _VertexBuffer[_ParentTriangleIndex];
+
+	if(_VertexParentIndex[_ParentTriangleIndex] >= 0)
+	{
+		return;
+	}
+
+	// uint v1Index = _IndexBuffer[id * 3];
+	// uint v2Index = _IndexBuffer[id * 3 + 1];
+	// uint v3Index = _IndexBuffer[id * 3 + 2];
+	uint v1Index = id * 3;
+	uint v2Index = id * 3 + 1;
+	uint v3Index = id * 3 + 2;
+
+	Vertex vertex1 = _VertexBuffer[v1Index];
+	Vertex vertex2 = _VertexBuffer[v2Index];
+	Vertex vertex3 = _VertexBuffer[v3Index];
+
+	
+	if(_VertexParentIndex[v1Index] >= 0 ||
+	   _VertexParentIndex[v2Index] >= 0 ||
+	   _VertexParentIndex[v3Index] >= 0)
+	{
+		return;
+	}
+
+	bool matchV1 = distance(vertexParent.position, vertex1.position) < SMALL_NUMBER;
+	bool matchV2 = distance(vertexParent.position, vertex2.position) < SMALL_NUMBER;
+	bool matchV3 = distance(vertexParent.position, vertex3.position) < SMALL_NUMBER;
+
+	if(matchV1 || matchV2 || matchV3)
+	{
+		_VertexParentIndex[v1Index] = (float)_ParentTriangleIndex;
+		_VertexParentIndex[v2Index] = (float)_ParentTriangleIndex;
+		_VertexParentIndex[v3Index] = (float)_ParentTriangleIndex;
+
+		Triangle triangleHexagon;
+		triangleHexagon.position1 = vertex1.position;
+		triangleHexagon.position2 = vertex2.position;
+		triangleHexagon.position3 = vertex3.position;
+		
+		if(matchV1)
+		{
+			triangleHexagon.position1 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
+		}
+		if(matchV2)
+		{
+			triangleHexagon.position2 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
+		}
+		if(matchV3)
+		{
+			triangleHexagon.position3 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
+		}
+		InterlockedAdd(_HexagonEdgeCounter[0], 1);
+		_HexagonEdgeAppend.Append(triangleHexagon);
+	}
+}
+
+[numthreads(512,1,1)]
+void GetNextTriangle (uint id : SV_DispatchThreadID)
+{
+	// uint v1Index = _IndexBuffer[id * 3];
+	// uint v2Index = _IndexBuffer[id * 3 + 1];
+	// uint v3Index = _IndexBuffer[id * 3 + 2];
+	uint v1Index = id * 3;
+	uint v2Index = id * 3 + 1;
+	uint v3Index = id * 3 + 2;
+	
+	Vertex vertex1 = _VertexBuffer[v1Index];
+	Vertex vertex2 = _VertexBuffer[v2Index];
+	Vertex vertex3 = _VertexBuffer[v3Index];
+
+	float distV1 = distance(vertex1.position, _HexagonEdge1);
+	float distV2 = distance(vertex2.position, _HexagonEdge1);
+	float distV3 = distance(vertex3.position, _HexagonEdge1);
+
+	float distV11 = distance(vertex1.position, _HexagonEdge2);
+	float distV21 = distance(vertex2.position, _HexagonEdge2);
+	float distV31 = distance(vertex3.position, _HexagonEdge2);
+
+	bool matchEdgeV1 = (distV1 < SMALL_NUMBER || distV11 < SMALL_NUMBER) && _VertexParentIndex[v1Index] < 0;
+	bool matchEdgeV2 = (distV2 < SMALL_NUMBER || distV21 < SMALL_NUMBER) && _VertexParentIndex[v2Index] < 0;
+	bool matchEdgeV3 = (distV3 < SMALL_NUMBER || distV31 < SMALL_NUMBER) && _VertexParentIndex[v3Index] < 0;
+
+	int amountMatching = 0;
+	if(matchEdgeV1)
+	{
+		amountMatching++;
+	}
+	if(matchEdgeV2)
+	{
+		amountMatching++;
+	}
+	if(matchEdgeV3)
+	{
+		amountMatching++;
+	}
+
+	if(amountMatching == 2)
+	{
+		if(!matchEdgeV1)
+		{
+			newTriangleIndex[0] = (int)v1Index;
+		}
+		if(!matchEdgeV2)
+		{
+			newTriangleIndex[0] = (int)v2Index;
+		}
+		if(!matchEdgeV3)
+		{
+			newTriangleIndex[0] = (int)v3Index;
+		}
+	}
+}
+
+[numthreads(512,1,1)]
+void ClearTriangleClumps (uint id : SV_DispatchThreadID)
+{
+	_VertexParentIndex[id] = (float)-1.0;
+}
