@@ -35,10 +35,12 @@ public class ShieldMeshGenerator : MonoBehaviour
         
         //ClearCustomMeshData();
 
-        Mesh newMesh = mesh.CopyMesh();
-        //Mesh newMesh = mesh;
-        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 1, 1));
-        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 2, 2));
+        Mesh newMesh;
+        newMesh = mesh.CopyMesh();
+        //newMesh = mesh;
+        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 1));
+        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 1, 2));
+        newMesh.LogAllVertexAttributes();
         newMesh.vertexBufferTarget |= GraphicsBuffer.Target.Structured;
         newMesh.indexBufferTarget |= GraphicsBuffer.Target.Structured;
         
@@ -52,6 +54,10 @@ public class ShieldMeshGenerator : MonoBehaviour
         nextTriangleBuffer.SetData(new int[1]);
         
         GraphicsBuffer indexBuffer = newMesh.GetIndexBuffer();
+        
+        Vector2[] indexArray = new Vector2[parentIndexBuffer.count];
+        Array.Fill(indexArray, new Vector2(-1, -1));
+        parentIndexBuffer.SetData(indexArray);
 
         triangleClumpShader.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
         for (int i = 0; i < newMesh.subMeshCount; i++)
@@ -59,9 +65,7 @@ public class ShieldMeshGenerator : MonoBehaviour
             List<Triangle> trianglesToCheck = new List<Triangle>();
             int nextTriangleIndex = 0;
             
-            float[] testIndex = new float[parentIndexBuffer.count];
-            Array.Fill(testIndex, -1f);
-            parentIndexBuffer.SetData(testIndex);
+            
 
             bool firstLoop = true;
             int j = 0;
@@ -130,8 +134,10 @@ public class ShieldMeshGenerator : MonoBehaviour
 
                 j++;
             }
-            
         }
+        
+        parentIndexBuffer.GetData(indexArray);
+        newMesh.uv = indexArray;
         
         AssetDatabase.CreateAsset( newMesh, "Assets/4ShieldMeshGenerator/GeneratedMeshes/" + newMesh.name + ".asset");
         AssetDatabase.SaveAssets();

@@ -480,8 +480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ba6decd361dfc64e936b0e967a01874, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mesh: {fileID: 2959467708922500008, guid: 71b179b7c2f12b24a85fe16ad98ccbb0, type: 3}
-  triangleClumpShader: {fileID: 7200000, guid: 1c3ea89acb97a594f884a0ba1a560b60, type: 3}
+  mesh: {fileID: 4300000, guid: 9858bbdeb5eb30b4b812935267fb5f24, type: 2}
 --- !u!4 &1548032890
 Transform:
   m_ObjectHideFlags: 0
