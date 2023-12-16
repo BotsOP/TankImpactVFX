@@ -39,7 +39,7 @@ public class ShieldMeshGenerator : MonoBehaviour
         newMesh = mesh.CopyMesh();
         //newMesh = mesh;
         newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2, 1));
-        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.Float32, 1, 2));
+        newMesh.AddVertexAttribute(new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.SInt32, 2, 2));
         newMesh.LogAllVertexAttributes();
         newMesh.vertexBufferTarget |= GraphicsBuffer.Target.Structured;
         newMesh.indexBufferTarget |= GraphicsBuffer.Target.Structured;
@@ -56,10 +56,10 @@ public class ShieldMeshGenerator : MonoBehaviour
         GraphicsBuffer indexBuffer = newMesh.GetIndexBuffer();
         
         Vector2[] indexArray = new Vector2[parentIndexBuffer.count];
-        Array.Fill(indexArray, new Vector2(-1, -1));
+        Array.Fill(indexArray, new Vector2(-1, 0));
         parentIndexBuffer.SetData(indexArray);
 
-        triangleClumpShader.GetKernelThreadGroupSizes(0, out uint x, out uint y, out uint z);
+        triangleClumpShader.GetKernelThreadGroupSizes(0, out uint x, out uint _, out uint _);
         for (int i = 0; i < newMesh.subMeshCount; i++)
         {
             List<Triangle> trianglesToCheck = new List<Triangle>();

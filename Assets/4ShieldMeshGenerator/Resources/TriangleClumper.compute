@@ -9,6 +9,7 @@ struct Vertex
 {
 	float3 position;
 	float3 normal;
+	float4 tangents;
 };
 
 struct Triangle
@@ -49,7 +50,6 @@ void TriangleClmp (uint id : SV_DispatchThreadID)
 	Vertex vertex1 = _VertexBuffer[v1Index];
 	Vertex vertex2 = _VertexBuffer[v2Index];
 	Vertex vertex3 = _VertexBuffer[v3Index];
-
 	
 	if(_VertexParentIndex[v1Index].x >= 0 ||
 	   _VertexParentIndex[v2Index].x >= 0 ||
@@ -75,14 +75,17 @@ void TriangleClmp (uint id : SV_DispatchThreadID)
 		
 		if(matchV1)
 		{
+			_VertexParentIndex[v1Index].y = 1;
 			triangleHexagon.position1 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
 		}
 		if(matchV2)
 		{
+			_VertexParentIndex[v2Index].y = 1;
 			triangleHexagon.position2 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
 		}
 		if(matchV3)
 		{
+			_VertexParentIndex[v3Index].y = 1;
 			triangleHexagon.position3 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
 		}
 		InterlockedAdd(_HexagonEdgeCounter[0], 1);

@@ -1,15 +1,13 @@
 #pragma kernel HitShield
 #pragma kernel UpdateShield
 
-float3 hitPos;
-float hitSize;
-float damage;
-float maxHealth;
+static const float FLOAT_TO_INT = 1000000;
 
 struct Vertex
 {
     float3 position;
     float3 normal;
+    float4 tangents;
 };
 
 struct HexagonStats
@@ -19,32 +17,32 @@ struct HexagonStats
 };
 
 StructuredBuffer<Vertex> _VertexBuffer;
-StructuredBuffer<float> _VertexParentIndex;
-StructuredBuffer<uint2> _HexagonStats;
+StructuredBuffer<float2> _VertexParentIndex;
+RWStructuredBuffer<int2> _HexagonStats;
+
+float3 _HitPos;
+float _HitSize;
+float _Damage;
+float _MaxHealth;
 
 [numthreads(512,1,1)]
 void HitShield (uint id : SV_DispatchThreadID)
 {
-    uint v1Index = id * 3;
-    uint v2Index = id * 3 + 1;
-    uint v3Index = id * 3 + 2;
+    uint index = id;
+    Vertex vertex = _VertexBuffer[index];
+    float dist = distance(vertex.position, _HitPos);
 
-    Vertex vertex1 = _VertexBuffer[v1Index];
-    Vertex vertex2 = _VertexBuffer[v2Index];
-    Vertex vertex3 = _VertexBuffer[v3Index];
-
-    float distV1 = distance(vertex1.position, hitPos);
-    float distV2 = distance(vertex2.position, hitPos);
-    float distV3 = distance(vertex3.position, hitPos);
-
-    float lowestDist = min(min(distV1, distV2), distV3);
-    if(lowestDist < hitSize)
+    if(dist < _HitSize)
     {
-        int parentIndex = (int)_VertexParentIndex[v1Index];
-        float health = _HexagonStats[parentIndex].health - damage;
-        InterlockedMin(_HexagonStats[parentIndex].health, health);
-        float shockWaveHealth = lowestDist / hitSize;
-        InterlockedMax(_HexagonStats[parentIndex].shockWaveHealth, shockWaveHealth);
+        int parentIndex = (int)_VertexParentIndex[index].x;
+        
+        float health = _HexagonStats[parentIndex].x / FLOAT_TO_INT - _Damage;
+        int intHealth = health * FLOAT_TO_INT;
+        InterlockedMin(_HexagonStats[parentIndex].x, intHealth);
+        
+        float shockWaveHealth = dist / _HitSize;
+        int intShockWaveHealth = shockWaveHealth * FLOAT_TO_INT;
+        InterlockedMax(_HexagonStats[parentIndex].y, intShockWaveHealth);
     }
 }
 
@@ -52,7 +50,10 @@ void HitShield (uint id : SV_DispatchThreadID)
 void UpdateShield (uint id : SV_DispatchThreadID)
 {
     uint v1Index = id * 3;
-    int parentIndex = (int)_VertexParentIndex[v1Index];
-    float shockWaveHealth = _HexagonStats[parentIndex].shockWaveHealth;
-    InterlockedMin(_HexagonStats[parentIndex].shockWaveHealth, shockWaveHealth - damage);
+    int parentIndex = (int)_VertexParentIndex[v1Index].x;
+    
+    float shockWaveHealth = _HexagonStats[parentIndex].y / FLOAT_TO_INT;
+    shockWaveHealth -= _Damage;
+    int intShockWaveHealth = shockWaveHealth * FLOAT_TO_INT;
+    InterlockedMin(_HexagonStats[parentIndex].y, intShockWaveHealth);
 }
