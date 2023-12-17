@@ -2,20 +2,20 @@ Shader "Unlit/WireframeFixedWidth"
 {
     Properties
     {
-        _MainTex("Texture", 2D) = "white" {}
         _WireframeColor("Wireframe color", color) = (1.0, 1.0, 1.0, 1.0)
         _Color("Mesh color", color) = (0.5, 0.5, 0.5, 1.0)
-        _WireframeWidth("Wireframe width", float) = 1
+        _Emissive("Emissive", float) = 1
+        _InsideWidth("Inside Width", Range(0,1)) = 1
+        _Padding("Padding", Range(0,1)) = 1
     }
     SubShader
     {
-        Tags { "RenderType" = "Opaque"}
+        Tags { "RenderType" = "Opaque" "Queue"="Transparent"}
         LOD 100
+        Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
-            // Removes the front facing triangles, this enables us to create the wireframe for those behind.
-            Cull Back
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -44,14 +44,11 @@ Shader "Unlit/WireframeFixedWidth"
                 float3 barycentric : TEXCOORD0;
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv = v.uv;
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
             }
@@ -73,19 +70,18 @@ Shader "Unlit/WireframeFixedWidth"
 
             fixed4 _WireframeColor;
             fixed4 _Color;
-            float _WireframeWidth;
+            float _Emissive;
+            float _InsideWidth;
+            float _Padding;
 
             fixed4 frag(g2f i) : SV_Target
             {
-                // Calculate the unit width based on triangle size.
-                float3 unitWidth = fwidth(i.barycentric);
-                // Find the barycentric coordinate closest to the edge.
-                float3 edge = step(unitWidth * _WireframeWidth, i.barycentric);
-                // Set alpha to 1 if within edge width, else 0.
-                float alpha = 1 - min(edge.x, min(edge.y, edge.z));
-                float3 color = lerp(_Color, _WireframeColor, alpha);
-                // Set to our backwards facing wireframe colour.
-                return fixed4(color, 0.5);
+                float closest = max(i.barycentric.x, max(i.barycentric.y, i.barycentric.z));
+                // Set alpha to 1 if within the threshold, else 0.
+                closest = 1 - step(_InsideWidth, (closest + _Padding) % 1);
+                float4 color = lerp(_Color, _WireframeColor, closest);
+                color.rgb *= _Emissive;
+                return color;
             }
             ENDCG
         }

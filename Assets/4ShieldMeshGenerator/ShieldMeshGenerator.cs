@@ -5,11 +5,12 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Random = UnityEngine.Random;
 
 public class ShieldMeshGenerator : MonoBehaviour
 {
     private const int MAX_TRIANGLE_CLUMP = 50;
-    private const float HIGH_NUMBER = 99999999999999999999999999999999999999f;
+    private const float HIGH_NUMBER = 1000f;
     
     [SerializeField] private Mesh mesh;
 
@@ -33,8 +34,6 @@ public class ShieldMeshGenerator : MonoBehaviour
             return;
         }
         
-        //ClearCustomMeshData();
-
         Mesh newMesh;
         newMesh = mesh.CopyMesh();
         //newMesh = mesh;
@@ -63,16 +62,14 @@ public class ShieldMeshGenerator : MonoBehaviour
         for (int i = 0; i < newMesh.subMeshCount; i++)
         {
             List<Triangle> trianglesToCheck = new List<Triangle>();
-            int nextTriangleIndex = 0;
-            
-            
+            int nextTriangleIndex = Random.Range(0, newMesh.vertexCount);
 
             bool firstLoop = true;
             int j = 0;
             while ((trianglesToCheck.Count > 0 || firstLoop) && j < newMesh.GetTriangleCount(i))
             {
                 firstLoop = false;
-                int xThreadGroup = Mathf.CeilToInt((float)newMesh.GetTriangleCount(i) / x);
+                int xThreadGroup = Mathf.CeilToInt((float)newMesh.vertexCount / 3 / x);
                 
                 triangleClumpShader.SetBuffer(kernelTriangleClmp, "_VertexBuffer", vertexBuffer);
                 triangleClumpShader.SetBuffer(kernelTriangleClmp, "_IndexBuffer", indexBuffer);
@@ -80,6 +77,7 @@ public class ShieldMeshGenerator : MonoBehaviour
                 triangleClumpShader.SetBuffer(kernelTriangleClmp, "_HexagonEdgeAppend", hexagonEdgeAppendBuffer);
                 triangleClumpShader.SetBuffer(kernelTriangleClmp, "_HexagonEdgeCounter", nextTriangleBuffer);
                 triangleClumpShader.SetInt("_ParentTriangleIndex", nextTriangleIndex);
+                triangleClumpShader.SetInt("_TriangleCount", (int)newMesh.GetIndexCount(i) / 3);
                 triangleClumpShader.Dispatch(kernelTriangleClmp, xThreadGroup, 1, 1);
 
                 int amountTriangleEdges = nextTriangleBuffer.GetCounter();
@@ -115,10 +113,10 @@ public class ShieldMeshGenerator : MonoBehaviour
                     if (triangleEdge.Count != 2)
                     {
                         Debug.LogWarning($"Amount matching edges is not 2");
-                        return;
+                        continue;
                     }
                 
-                    nextTriangleBuffer.SetData(new[] {-1});
+                    nextTriangleBuffer.SetData(new[] {(int)-1});
                 
                     triangleClumpShader.SetVector("_HexagonEdge1", triangleEdge[0]);
                     triangleClumpShader.SetVector("_HexagonEdge2", triangleEdge[1]);
@@ -126,6 +124,7 @@ public class ShieldMeshGenerator : MonoBehaviour
                     triangleClumpShader.SetBuffer(kernelGetNextTriangle, "_IndexBuffer", indexBuffer);
                     triangleClumpShader.SetBuffer(kernelGetNextTriangle, "newTriangleIndex", nextTriangleBuffer);
                     triangleClumpShader.SetBuffer(kernelGetNextTriangle, "_VertexParentIndex", parentIndexBuffer);
+                    triangleClumpShader.SetInt("_TriangleCount", (int)newMesh.GetIndexCount(i) / 3);
                     triangleClumpShader.Dispatch(kernelGetNextTriangle, xThreadGroup, 1, 1);
 
                     nextTriangleIndex = nextTriangleBuffer.GetCounter();

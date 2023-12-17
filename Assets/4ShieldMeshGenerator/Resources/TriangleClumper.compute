@@ -2,8 +2,8 @@
 #pragma kernel GetNextTriangle
 #pragma kernel ClearTriangleClumps
 
-static const float HIGH_NUMBER = 99999999999999999999999999999999999999.0;
-static const float SMALL_NUMBER = 0.000000001;
+static const float HIGH_NUMBER = 1000.0;
+static const float SMALL_NUMBER = 0.0000000000001;
 
 struct Vertex
 {
@@ -26,6 +26,7 @@ AppendStructuredBuffer<Triangle> _HexagonEdgeAppend;
 RWStructuredBuffer<int> newTriangleIndex;
 RWStructuredBuffer<int> _HexagonEdgeCounter;
 int _ParentTriangleIndex;
+int _TriangleCount;
 
 float3 _HexagonEdge1;
 float3 _HexagonEdge2;
@@ -33,6 +34,11 @@ float3 _HexagonEdge2;
 [numthreads(512,1,1)]
 void TriangleClmp (uint id : SV_DispatchThreadID)
 {
+	if((int)id >= _TriangleCount)
+	{
+		return;
+	}
+	
 	Vertex vertexParent = _VertexBuffer[_ParentTriangleIndex];
 
 	if(_VertexParentIndex[_ParentTriangleIndex].x >= 0)
@@ -76,17 +82,17 @@ void TriangleClmp (uint id : SV_DispatchThreadID)
 		if(matchV1)
 		{
 			_VertexParentIndex[v1Index].y = 1;
-			triangleHexagon.position1 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
+			triangleHexagon.position1 = float3(v1Index, distance(vertexParent.position, vertex1.position), HIGH_NUMBER);
 		}
 		if(matchV2)
 		{
 			_VertexParentIndex[v2Index].y = 1;
-			triangleHexagon.position2 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
+			triangleHexagon.position2 = float3(v2Index, distance(vertexParent.position, vertex2.position), HIGH_NUMBER);
 		}
 		if(matchV3)
 		{
 			_VertexParentIndex[v3Index].y = 1;
-			triangleHexagon.position3 = float3(HIGH_NUMBER, HIGH_NUMBER, HIGH_NUMBER);
+			triangleHexagon.position3 = float3(v3Index, distance(vertexParent.position, vertex3.position), HIGH_NUMBER);
 		}
 		InterlockedAdd(_HexagonEdgeCounter[0], 1);
 		_HexagonEdgeAppend.Append(triangleHexagon);
@@ -96,6 +102,10 @@ void TriangleClmp (uint id : SV_DispatchThreadID)
 [numthreads(512,1,1)]
 void GetNextTriangle (uint id : SV_DispatchThreadID)
 {
+	if((int)id >= _TriangleCount)
+	{
+		return;
+	}
 	// uint v1Index = _IndexBuffer[id * 3];
 	// uint v2Index = _IndexBuffer[id * 3 + 1];
 	// uint v3Index = _IndexBuffer[id * 3 + 2];
@@ -148,10 +158,4 @@ void GetNextTriangle (uint id : SV_DispatchThreadID)
 			newTriangleIndex[0] = (int)v3Index;
 		}
 	}
-}
-
-[numthreads(512,1,1)]
-void ClearTriangleClumps (uint id : SV_DispatchThreadID)
-{
-	_VertexParentIndex[id].x = (float)-1.0;
 }
