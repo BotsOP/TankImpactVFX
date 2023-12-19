@@ -4,28 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b04e3e82-7445-4779-ae07-dafa3ffc5ab3" name="Changes" comment="commit">
-      <change afterPath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Sphere.asset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Sphere.asset.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/Editor.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/Editor/GradientGenerator_Editor.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/Editor/GradientGenerator_Editor.cs.meta" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/GradientGenerator.cs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/GradientGenerator.cs.meta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/shelf/Uncommitted_changes_before_Update_at_18_12_2023_12_16__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/shelf/Uncommitted_changes_before_Update_at_18_12_2023_12_16__Changes_.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Player/PlayerShoot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Player/PlayerShoot.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Body.asset" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Body.asset.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/WireFrame.shader" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/WireFrame.shader.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
+    <list default="true" id="b04e3e82-7445-4779-ae07-dafa3ffc5ab3" name="Changes" comment="Finished shieldmanager and subsequent systems">
+      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -131,7 +112,7 @@
       <workItem from="1702813499140" duration="2681000" />
       <workItem from="1702898157629" duration="178000" />
       <workItem from="1702898350168" duration="5041000" />
-      <workItem from="1702983013915" duration="6390000" />
+      <workItem from="1702983013915" duration="7027000" />
     </task>
     <task id="LOCAL-00001" summary="started work on shield hit compute shader">
       <option name="closed" value="true" />
@@ -157,7 +138,15 @@
       <option name="project" value="LOCAL" />
       <updated>1702898418169</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Finished shieldmanager and subsequent systems">
+      <option name="closed" value="true" />
+      <created>1702994494210</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1702994494210</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -182,6 +171,7 @@
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="started work on shield hit compute shader" />
     <MESSAGE value="commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="commit" />
+    <MESSAGE value="Finished shieldmanager and subsequent systems" />
+    <option name="LAST_COMMIT_MESSAGE" value="Finished shieldmanager and subsequent systems" />
   </component>
 </project>
