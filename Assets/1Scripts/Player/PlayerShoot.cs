@@ -7,6 +7,7 @@ public class PlayerShoot : MonoBehaviour
     [SerializeField] private float damageAmount;
     [SerializeField] private float hitSize;
     [SerializeField] private LayerMask shieldMask;
+    [SerializeField] private Camera cam;
     void Awake()
     {
         
@@ -16,7 +17,8 @@ public class PlayerShoot : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            Debug.DrawRay(ray.origin, ray.direction);
             RaycastHit hit;
             if (Physics.Raycast (ray, out hit, 100, shieldMask))
             {

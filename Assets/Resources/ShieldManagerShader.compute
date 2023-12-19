@@ -19,41 +19,102 @@ struct HexagonStats
 StructuredBuffer<Vertex> _VertexBuffer;
 StructuredBuffer<float2> _VertexParentIndex;
 RWStructuredBuffer<int2> _HexagonStats;
+RWStructuredBuffer<int> _HitTriangles;
 
 float3 _HitPos;
 float _HitSize;
 float _Damage;
 float _MaxHealth;
+int _VertexCount;
+
+bool isPointInTriangle(float3 hitPos, float3 v0, float3 v1, float3 v2) 
+{
+    // Compute vectors 
+    float3 v0v1 = v1 - v0; 
+    float3 v0v2 = v2 - v0; 
+    float3 v0p = hitPos - v0;
+
+    // Compute dot products
+    float d00 = dot(v0v1, v0v1);
+    float d01 = dot(v0v1, v0v2);
+    float d11 = dot(v0v2, v0v2);
+    float d20 = dot(v0p, v0v1);
+    float d21 = dot(v0p, v0v2);
+
+    // Compute barycentric coordinates
+    float denom = d00 * d11 - d01 * d01;
+    float v = (d11 * d20 - d01 * d21) / denom;
+    float w = (d00 * d21 - d01 * d20) / denom;
+    float u = 1.0f - v - w;
+
+    // Check if point is in triangle
+    return v >= 0.0f && w >= 0.0f && u >= 0.0f;
+}
 
 [numthreads(512,1,1)]
 void HitShield (uint id : SV_DispatchThreadID)
 {
-    uint index = id;
-    Vertex vertex = _VertexBuffer[index];
-    float dist = distance(vertex.position, _HitPos);
+    if(id >= (uint)_VertexCount)
+    {
+        return;
+    }
+    uint v1Index = id * 3;
+    uint v2Index = id * 3 + 1;
+    uint v3Index = id * 3 + 2;
+
+    Vertex vertex1 = _VertexBuffer[v1Index];
+    Vertex vertex2 = _VertexBuffer[v2Index];
+    Vertex vertex3 = _VertexBuffer[v3Index];
+    float dist1 = distance(vertex1.position, _HitPos);
+    float dist2 = distance(vertex2.position, _HitPos);
+    float dist3 = distance(vertex3.position, _HitPos);
+    float dist = min(dist1, min(dist2, dist3));
 
     if(dist < _HitSize)
     {
-        int parentIndex = (int)_VertexParentIndex[index].x;
+        int parentIndex = (int)_VertexParentIndex[v1Index].x;
+
+        if(isPointInTriangle(_HitPos, vertex1.position, vertex2.position, vertex3.position) && _HexagonStats[parentIndex].x / FLOAT_TO_INT >= 1)
+        {
+            InterlockedAdd(_HitTriangles[0], 1);
+            return;
+        }
         
-        float health = _HexagonStats[parentIndex].x / FLOAT_TO_INT - _Damage;
+        float shockWaveHealth = 1 - dist / _HitSize;
+        
+        float health = saturate(_HexagonStats[parentIndex].x / FLOAT_TO_INT + _Damage * shockWaveHealth / _MaxHealth);
         int intHealth = health * FLOAT_TO_INT;
-        InterlockedMin(_HexagonStats[parentIndex].x, intHealth);
+        InterlockedMax(_HexagonStats[parentIndex].x, intHealth);
         
-        float shockWaveHealth = dist / _HitSize;
         int intShockWaveHealth = shockWaveHealth * FLOAT_TO_INT;
         InterlockedMax(_HexagonStats[parentIndex].y, intShockWaveHealth);
+        //_HexagonStats[parentIndex].y = intShockWaveHealth;
     }
+
+    
 }
 
 [numthreads(512,1,1)]
 void UpdateShield (uint id : SV_DispatchThreadID)
 {
-    uint v1Index = id * 3;
+    if(id >= (uint)_VertexCount)
+    {
+        return;
+    }
+    
+    uint v1Index = id;
     int parentIndex = (int)_VertexParentIndex[v1Index].x;
     
     float shockWaveHealth = _HexagonStats[parentIndex].y / FLOAT_TO_INT;
-    shockWaveHealth -= _Damage;
+    if(shockWaveHealth == 0)
+    {
+        return;
+    }
+    shockWaveHealth += _Damage;
+    if (shockWaveHealth >= 2)
+    {
+        shockWaveHealth = 0;
+    }
     int intShockWaveHealth = shockWaveHealth * FLOAT_TO_INT;
-    InterlockedMin(_HexagonStats[parentIndex].y, intShockWaveHealth);
+    _HexagonStats[parentIndex].y = intShockWaveHealth;
 }

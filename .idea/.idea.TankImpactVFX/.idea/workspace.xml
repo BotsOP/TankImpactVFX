@@ -4,7 +4,29 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b04e3e82-7445-4779-ae07-dafa3ffc5ab3" name="Changes" comment="" />
+    <list default="true" id="b04e3e82-7445-4779-ae07-dafa3ffc5ab3" name="Changes" comment="commit">
+      <change afterPath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Sphere.asset" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Sphere.asset.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/Editor.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/Editor/GradientGenerator_Editor.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/Editor/GradientGenerator_Editor.cs.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/GradientGenerator.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/6GradientGenerator/GradientGenerator.cs.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/shelf/Uncommitted_changes_before_Update_at_18_12_2023_12_16__Changes_.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/shelf/Uncommitted_changes_before_Update_at_18_12_2023_12_16__Changes_.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Player/PlayerShoot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Player/PlayerShoot.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Body.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Body.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/WireFrame.shader" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/WireFrame.shader.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/TagManager.asset" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,7 +41,9 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="mock://C:/UnityProjects/TankImpactVFX/Assets/4ShieldMeshGenerator/GeneratedMeshes/copy of Body.asset" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../VFXTests/Assets/GradientTextureGenerator/Script/GradientGenerator.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/../VFXTests/Assets/Scripts/TextureArrayCreator.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
@@ -34,28 +58,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "C:\\Users\\prutm\\AppData\\Roaming\\JetBrains\\Rider2023.2\\resharper-host\\DecompilerCache",
-      "C:\\Users\\prutm\\AppData\\Roaming\\JetBrains\\Rider2023.2\\resharper-host\\SourcesCache",
-      "C:\\Users\\prutm\\AppData\\Local\\Symbols\\src"
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;C:\\Users\\prutm\\AppData\\Roaming\\JetBrains\\Rider2023.2\\resharper-host\\DecompilerCache&quot;,
+      &quot;C:\\Users\\prutm\\AppData\\Roaming\\JetBrains\\Rider2023.2\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\prutm\\AppData\\Local\\Symbols\\src&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Start Unity" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="C:\Program Files\Unity\Hub\Editor\2021.3.15f1\Editor\Unity.exe" />
@@ -83,10 +108,10 @@
       </option>
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" ignored-value-for-modified-check="29124">
       <option name="allowRunningInParallel" value="false" />
       <option name="listenPortForConnections" value="false" />
-      <option name="pid" />
+      <option name="pid" value="29124" />
       <option name="projectPathOnTarget" />
       <option name="selectedOptions">
         <list />
@@ -105,6 +130,8 @@
       <workItem from="1702562180705" duration="4620000" />
       <workItem from="1702813499140" duration="2681000" />
       <workItem from="1702898157629" duration="178000" />
+      <workItem from="1702898350168" duration="5041000" />
+      <workItem from="1702983013915" duration="6390000" />
     </task>
     <task id="LOCAL-00001" summary="started work on shield hit compute shader">
       <option name="closed" value="true" />
@@ -122,7 +149,15 @@
       <option name="project" value="LOCAL" />
       <updated>1702813626653</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="commit">
+      <option name="closed" value="true" />
+      <created>1702898418169</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1702898418169</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

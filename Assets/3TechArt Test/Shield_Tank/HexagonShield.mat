@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Unlit_WireframeFixedWidth
+  m_Name: HexagonShield
   m_Shader: {fileID: 4800000, guid: ef476725241011248970c976bb4f35a0, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
@@ -20,17 +20,22 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _HealthGradient:
+        m_Texture: {fileID: 2800000, guid: dddddd20a11981f45af55bd68f166090, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Displacement: 0.0152
     - _Emissive: 3
     - _Glossiness: 0.5
-    - _InsideWidth: 0.191
+    - _InsideWidth: 0.213
     - _Metallic: 0
-    - _Padding: 0.944
+    - _Padding: 0.843
     - _WireframeAliasing: 1.5
     - _WireframeWidth: 0.32
     m_Colors:
