@@ -1,0 +1,1992 @@
+Index: Assets/5Shaders/HexaShieldShader/WireFrame.shader
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>Shader \"Unlit/WireframeFixedWidth\"\r\n{\r\n    Properties\r\n    {\r\n        _MainTex(\"Texture\", 2D) = \"white\" {}\r\n        _WireframeColor(\"Wireframe color\", color) = (1.0, 1.0, 1.0, 1.0)\r\n        _Color(\"Mesh color\", color) = (0.5, 0.5, 0.5, 1.0)\r\n        _WireframeWidth(\"Wireframe width\", float) = 1\r\n    }\r\n    SubShader\r\n    {\r\n        Tags { \"RenderType\" = \"Opaque\"}\r\n        LOD 100\r\n\r\n        Pass\r\n        {\r\n            // Removes the front facing triangles, this enables us to create the wireframe for those behind.\r\n            Cull Back\r\n            CGPROGRAM\r\n            #pragma vertex vert\r\n            #pragma fragment frag\r\n            #pragma geometry geom\r\n            // make fog work\r\n            #pragma multi_compile_fog\r\n\r\n            #include \"UnityCG.cginc\"\r\n\r\n            struct appdata\r\n            {\r\n                float4 vertex : POSITION;\r\n                float2 uv : TEXCOORD0;\r\n            };\r\n\r\n            struct v2f\r\n            {\r\n                float2 uv : TEXCOORD0;\r\n                UNITY_FOG_COORDS(1)\r\n                float4 vertex : SV_POSITION;\r\n            };\r\n\r\n            // We add our barycentric variables to the geometry struct.\r\n            struct g2f {\r\n                float4 pos : SV_POSITION;\r\n                float3 barycentric : TEXCOORD0;\r\n            };\r\n\r\n            sampler2D _MainTex;\r\n            float4 _MainTex_ST;\r\n\r\n            v2f vert(appdata v)\r\n            {\r\n                v2f o;\r\n                o.vertex = UnityObjectToClipPos(v.vertex);\r\n                o.uv = TRANSFORM_TEX(v.uv, _MainTex);\r\n                UNITY_TRANSFER_FOG(o,o.vertex);\r\n                return o;\r\n            }\r\n\r\n            // This applies the barycentric coordinates to each vertex in a triangle.\r\n            [maxvertexcount(3)]\r\n            void geom(triangle v2f IN[3], inout TriangleStream<g2f> triStream) {\r\n                g2f o;\r\n                o.pos = IN[0].vertex;\r\n                o.barycentric = float3(IN[0].uv.y, 0.0, 0.0);\r\n                triStream.Append(o);\r\n                o.pos = IN[1].vertex;\r\n                o.barycentric = float3(0.0, IN[1].uv.y, 0.0);\r\n                triStream.Append(o);\r\n                o.pos = IN[2].vertex;\r\n                o.barycentric = float3(0.0, 0.0, IN[2].uv.y);\r\n                triStream.Append(o);\r\n            }\r\n\r\n            fixed4 _WireframeColor;\r\n            fixed4 _Color;\r\n            float _WireframeWidth;\r\n\r\n            fixed4 frag(g2f i) : SV_Target\r\n            {\r\n                // Calculate the unit width based on triangle size.\r\n                float3 unitWidth = fwidth(i.barycentric);\r\n                // Find the barycentric coordinate closest to the edge.\r\n                float3 edge = step(unitWidth * _WireframeWidth, i.barycentric);\r\n                // Set alpha to 1 if within edge width, else 0.\r\n                float alpha = 1 - min(edge.x, min(edge.y, edge.z));\r\n                float3 color = lerp(_Color, _WireframeColor, alpha);\r\n                // Set to our backwards facing wireframe colour.\r\n                return fixed4(color, 0.5);\r\n            }\r\n            ENDCG\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/WireFrame.shader b/Assets/5Shaders/HexaShieldShader/WireFrame.shader
+--- a/Assets/5Shaders/HexaShieldShader/WireFrame.shader	(revision abbefe71e60a2b4e22b0b5c02d17459947993e90)
++++ b/Assets/5Shaders/HexaShieldShader/WireFrame.shader	(date 1702816127267)
+@@ -9,13 +9,12 @@
+     }
+     SubShader
+     {
+-        Tags { "RenderType" = "Opaque"}
++        Tags { "RenderType"="Opaque" "Queue"="Transparent" }
+         LOD 100
+ 
+         Pass
+         {
+             // Removes the front facing triangles, this enables us to create the wireframe for those behind.
+-            Cull Back
+             CGPROGRAM
+             #pragma vertex vert
+             #pragma fragment frag
+@@ -47,6 +46,11 @@
+             sampler2D _MainTex;
+             float4 _MainTex_ST;
+ 
++            float Remap (float value, float from1, float to1, float from2, float to2) 
++            {
++                return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
++            }
++
+             v2f vert(appdata v)
+             {
+                 v2f o;
+@@ -80,7 +84,9 @@
+                 // Calculate the unit width based on triangle size.
+                 float3 unitWidth = fwidth(i.barycentric);
+                 // Find the barycentric coordinate closest to the edge.
+-                float3 edge = step(unitWidth * _WireframeWidth, i.barycentric);
++                //float3 edge = smoothstep(float3(-0.0001, -0.0001, -0.0001), unitWidth * _WireframeWidth, i.barycentric);
++                float3 edge = Remap(i.barycentric, -1000000000.0, 1.0, -10, 0);
++                //float3 edge = smoothstep(float3(0.0, 0.0, 0.0), unitWidth * _WireframeWidth, i.barycentric);
+                 // Set alpha to 1 if within edge width, else 0.
+                 float alpha = 1 - min(edge.x, min(edge.y, edge.z));
+                 float3 color = lerp(_Color, _WireframeColor, alpha);
+Index: Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl b/Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl
+new file mode 100644
+--- /dev/null	(date 1702816185011)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl	(date 1702816185011)
+@@ -0,0 +1,332 @@
++#ifndef UNIVERSAL_FORWARD_LIT_PASS_INCLUDED
++#define UNIVERSAL_FORWARD_LIT_PASS_INCLUDED
++
++#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
++
++// GLES2 has limited amount of interpolators
++#if defined(_PARALLAXMAP) && !defined(SHADER_API_GLES)
++#define REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR
++#endif
++
++#if (defined(_NORMALMAP) || (defined(_PARALLAXMAP) && !defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR))) || defined(_DETAIL)
++#define REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR
++#endif
++
++// keep this file in sync with LitGBufferPass.hlsl
++
++struct Attributes
++{
++    float4 positionOS   : POSITION;
++    float3 normalOS     : NORMAL;
++    float4 tangentOS    : TANGENT;
++    float2 texcoord     : TEXCOORD0;
++
++    UNITY_VERTEX_INPUT_INSTANCE_ID
++};
++
++struct Varyings
++{
++    float2 uv                       : TEXCOORD0;
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    float3 positionWS               : TEXCOORD1;
++#endif
++
++    float3 normalWS                 : TEXCOORD2;
++#if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++    half4 tangentWS                : TEXCOORD3;    // xyz: tangent, w: sign
++#endif
++    float3 viewDirWS                : TEXCOORD11;
++
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    half4 fogFactorAndVertexLight   : TEXCOORD12; // x: fogFactor, yzw: vertex light
++#else
++    half  fogFactor                 : TEXCOORD12;
++#endif
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    float4 shadowCoord              : TEXCOORD13;
++#endif
++
++#if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirTS                : TEXCOORD14;
++#endif
++
++    DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 8);
++#ifdef DYNAMICLIGHTMAP_ON
++    float2  dynamicLightmapUV : TEXCOORD9; // Dynamic lightmap UVs
++#endif
++
++    float4 positionCS               : SV_POSITION;
++    float2 displacement : TEXCOORD6;
++
++    UNITY_VERTEX_INPUT_INSTANCE_ID
++    UNITY_VERTEX_OUTPUT_STEREO
++};
++
++struct g2f {
++    float2 uv                       : TEXCOORD0;
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    float3 positionWS               : TEXCOORD1;
++#endif
++
++    float3 normalWS                 : TEXCOORD2;
++#if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++    half4 tangentWS                : TEXCOORD3;    // xyz: tangent, w: sign
++#endif
++    float3 viewDirWS                : TEXCOORD11;
++
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    half4 fogFactorAndVertexLight   : TEXCOORD12; // x: fogFactor, yzw: vertex light
++#else
++    half  fogFactor                 : TEXCOORD12;
++#endif
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    float4 shadowCoord              : TEXCOORD13;
++#endif
++
++#if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirTS                : TEXCOORD14;
++#endif
++
++    DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 8);
++#ifdef DYNAMICLIGHTMAP_ON
++    float2  dynamicLightmapUV : TEXCOORD9; // Dynamic lightmap UVs
++#endif
++
++    float4 positionCS               : SV_POSITION;
++    float3 barycentric : TEXCOORD10;
++    float2 displacement : TEXCOORD6;
++
++
++    UNITY_VERTEX_INPUT_INSTANCE_ID
++    UNITY_VERTEX_OUTPUT_STEREO
++};
++
++void InitializeInputData(g2f input, half3 normalTS, out InputData inputData)
++{
++    inputData = (InputData)0;
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    inputData.positionWS = input.positionWS;
++#endif
++
++    half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
++#if defined(_NORMALMAP) || defined(_DETAIL)
++    float sgn = input.tangentWS.w;      // should be either +1 or -1
++    float3 bitangent = sgn * cross(input.normalWS.xyz, input.tangentWS.xyz);
++    half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWS.xyz);
++
++    #if defined(_NORMALMAP)
++    inputData.tangentToWorld = tangentToWorld;
++    #endif
++    inputData.normalWS = TransformTangentToWorld(normalTS, tangentToWorld);
++#else
++    inputData.normalWS = input.normalWS;
++#endif
++
++    inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
++    inputData.viewDirectionWS = viewDirWS;
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    inputData.shadowCoord = input.shadowCoord;
++#elif defined(MAIN_LIGHT_CALCULATE_SHADOWS)
++    inputData.shadowCoord = TransformWorldToShadowCoord(inputData.positionWS);
++#else
++    inputData.shadowCoord = float4(0, 0, 0, 0);
++#endif
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    inputData.fogCoord = InitializeInputDataFog(float4(input.positionWS, 1.0), input.fogFactorAndVertexLight.x);
++    inputData.vertexLighting = input.fogFactorAndVertexLight.yzw;
++#else
++    inputData.fogCoord = InitializeInputDataFog(float4(input.positionWS, 1.0), input.fogFactor);
++#endif
++
++#if defined(DYNAMICLIGHTMAP_ON)
++    inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.dynamicLightmapUV, input.vertexSH, inputData.normalWS);
++#else
++    inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.vertexSH, inputData.normalWS);
++#endif
++
++    inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
++    inputData.shadowMask = SAMPLE_SHADOWMASK(input.staticLightmapUV);
++
++    #if defined(DEBUG_DISPLAY)
++    #if defined(DYNAMICLIGHTMAP_ON)
++    inputData.dynamicLightmapUV = input.dynamicLightmapUV;
++    #endif
++    #if defined(LIGHTMAP_ON)
++    inputData.staticLightmapUV = input.staticLightmapUV;
++    #else
++    inputData.vertexSH = input.vertexSH;
++    #endif
++    #endif
++}
++
++///////////////////////////////////////////////////////////////////////////////
++//                  Vertex and Fragment functions                            //
++///////////////////////////////////////////////////////////////////////////////
++
++
++// Used in Standard (Physically Based) shader
++Varyings LitPassVertex(Attributes input)
++{
++    Varyings output = (Varyings)0;
++
++    UNITY_SETUP_INSTANCE_ID(input);
++    UNITY_TRANSFER_INSTANCE_ID(input, output);
++    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
++
++    VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
++
++    // normalWS and tangentWS already normalize.
++    // this is required to avoid skewing the direction during interpolation
++    // also required for per-vertex lighting and SH evaluation
++    VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
++
++    half3 vertexLight = VertexLighting(vertexInput.positionWS, normalInput.normalWS);
++
++    half fogFactor = 0;
++    #if !defined(_FOG_FRAGMENT)
++        fogFactor = ComputeFogFactor(vertexInput.positionCS.z);
++    #endif
++
++    output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);
++
++    // already normalized from normal transform to WS.
++    output.normalWS = normalInput.normalWS;
++#if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR) || defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    real sign = input.tangentOS.w * GetOddNegativeScale();
++    half4 tangentWS = half4(normalInput.tangentWS.xyz, sign);
++#endif
++#if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++    output.tangentWS = tangentWS;
++#endif
++
++#if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirWS = GetWorldSpaceNormalizeViewDir(vertexInput.positionWS);
++    half3 viewDirTS = GetViewDirectionTangentSpace(tangentWS, output.normalWS, viewDirWS);
++    output.viewDirTS = viewDirTS;
++#endif
++
++    OUTPUT_LIGHTMAP_UV(input.staticLightmapUV, unity_LightmapST, output.staticLightmapUV);
++#ifdef DYNAMICLIGHTMAP_ON
++    output.dynamicLightmapUV = input.dynamicLightmapUV.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
++#endif
++    OUTPUT_SH(output.normalWS.xyz, output.vertexSH);
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    output.fogFactorAndVertexLight = half4(fogFactor, vertexLight);
++#else
++    output.fogFactor = fogFactor;
++#endif
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    output.positionWS = vertexInput.positionWS;
++#endif
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    output.shadowCoord = GetShadowCoord(vertexInput);
++#endif
++
++    output.positionCS = vertexInput.positionCS;
++
++    return output;
++}
++
++float3 barycentricPositions[3]; 
++[maxvertexcount(3)]
++void geom(triangle Varyings IN[3], inout TriangleStream<g2f> triStream) {
++    g2f o;
++
++    barycentricPositions[0] = float3(1.0, 0.0, 0.0);
++    barycentricPositions[1] = float3(0.0, 1.0, 0.0);
++    barycentricPositions[2] = float3(0.0, 0.0, 1.0);
++
++    for (int i = 0; i < 3; i++)
++    {
++        o.barycentric = barycentricPositions[i];
++        o.displacement = IN[i].displacement;
++        o.positionCS = IN[i].positionCS;
++        o.vertexSH = IN[i].vertexSH;
++        o.uv = IN[i].uv;
++        o.normalWS = IN[i].normalWS;
++        o.viewDirWS = IN[i].viewDirWS;
++    
++        #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++        o.positionWS = IN[i].positionWS;
++        #endif
++    
++        #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++        o.tangentWS = IN[i].tangentWS;
++        #endif
++    
++        #ifdef _ADDITIONAL_LIGHTS_VERTEX
++        o.fogFactorAndVertexLight = IN[i].fogFactorAndVertexLight;
++        #else
++        o.fogFactor = IN[i].fogFactor;
++        #endif
++    
++        #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++        o.shadowCoord = IN[i].shadowCoord;
++        #endif
++    
++        #if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++        o.viewDirTS = IN[i].viewDirTS;
++        #endif
++    
++        #ifdef DYNAMICLIGHTMAP_ON
++        o.dynamicLightmapUV = IN[i].dynamicLightmapUV;
++        #endif
++    
++        triStream.Append(o);
++    }
++}
++
++sampler2D _OutlineGradient;
++// Used in Standard (Physically Based) shader
++half4 LitPassFragment(g2f input) : SV_Target
++{
++    UNITY_SETUP_INSTANCE_ID(input);
++    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
++
++#if defined(_PARALLAXMAP)
++#if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirTS = input.viewDirTS;
++#else
++    half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
++    half3 viewDirTS = GetViewDirectionTangentSpace(input.tangentWS, input.normalWS, viewDirWS);
++#endif
++    ApplyPerPixelDisplacement(viewDirTS, input.uv);
++#endif
++
++    SurfaceData surfaceData;
++    InitializeStandardLitSurfaceData(input.uv, surfaceData);
++
++    //Edge highlight
++    float3 unitWidth = fwidth(input.barycentric);
++    float3 aliased = smoothstep(float3(0.0, 0.0, 0.0), unitWidth * 3, input.barycentric);
++    float alpha = 1 - min(aliased.x, min(aliased.y, aliased.z));
++        
++    float localTime = (_Time.y - input.displacement.y + 0.001) / _TotalTime;
++    float3 wireFrameColor = tex2D(_OutlineGradient, float2(localTime, 1)) * 10 * alpha;
++    surfaceData.emission += wireFrameColor;
++
++    InputData inputData;
++    InitializeInputData(input, surfaceData.normalTS, inputData);
++    SETUP_DEBUG_TEXTURE_DATA(inputData, input.uv, _BaseMap);
++
++#ifdef _DBUFFER
++    ApplyDecalToSurfaceData(input.positionCS, surfaceData, inputData);
++#endif
++
++    half4 color = UniversalFragmentPBR(inputData, surfaceData);
++
++    color.rgb = MixFog(color.rgb, inputData.fogCoord);
++    color.a = OutputAlpha(color.a, _Surface);
++
++    return color;
++}
++
++#endif
+Index: Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl.meta
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl.meta b/Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl.meta
+new file mode 100644
+--- /dev/null	(date 1702815856963)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl.meta	(date 1702815856963)
+@@ -0,0 +1,7 @@
++fileFormatVersion: 2
++guid: bd695b896d0ec2544b337f3c834bb242
++ShaderIncludeImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+Index: Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat b/Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat
+new file mode 100644
+--- /dev/null	(date 1702815882288)
++++ b/Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat	(date 1702815882288)
+@@ -0,0 +1,120 @@
++%YAML 1.1
++%TAG !u! tag:unity3d.com,2011:
++--- !u!21 &2100000
++Material:
++  serializedVersion: 8
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_Name: Universal Render Pipeline_Lit2
++  m_Shader: {fileID: 4800000, guid: 5304fcdd4c2019a438210b76e7277991, type: 3}
++  m_ValidKeywords: []
++  m_InvalidKeywords: []
++  m_LightmapFlags: 4
++  m_EnableInstancingVariants: 0
++  m_DoubleSidedGI: 0
++  m_CustomRenderQueue: -1
++  stringTagMap:
++    RenderType: Opaque
++  disabledShaderPasses: []
++  m_SavedProperties:
++    serializedVersion: 3
++    m_TexEnvs:
++    - _BaseMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _BumpMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailAlbedoMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailMask:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _DetailNormalMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _EmissionMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _MainTex:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _MetallicGlossMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _OcclusionMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _OutlineGradient:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _ParallaxMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - _SpecGlossMap:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_Lightmaps:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_LightmapsInd:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    - unity_ShadowMasks:
++        m_Texture: {fileID: 0}
++        m_Scale: {x: 1, y: 1}
++        m_Offset: {x: 0, y: 0}
++    m_Ints: []
++    m_Floats:
++    - _AlphaClip: 0
++    - _Blend: 0
++    - _BumpScale: 1
++    - _ClearCoatMask: 0
++    - _ClearCoatSmoothness: 0
++    - _Cull: 2
++    - _Cutoff: 0.5
++    - _DetailAlbedoMapScale: 1
++    - _DetailNormalMapScale: 1
++    - _DstBlend: 0
++    - _EnvironmentReflections: 1
++    - _GlossMapScale: 0
++    - _Glossiness: 0
++    - _GlossyReflections: 0
++    - _Metallic: 0
++    - _OcclusionStrength: 1
++    - _Parallax: 0.005
++    - _QueueOffset: 0
++    - _ReceiveShadows: 1
++    - _Smoothness: 0.5
++    - _Smoothness2: 0.5
++    - _SmoothnessTextureChannel: 0
++    - _SmoothnessTextureChannel2: 0
++    - _SpecularHighlights: 1
++    - _SrcBlend: 1
++    - _Surface: 0
++    - _TotalTime: 0
++    - _WorkflowMode: 1
++    - _ZWrite: 1
++    m_Colors:
++    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
++    - _Color: {r: 1, g: 1, b: 1, a: 1}
++    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
++    - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
++  m_BuildTextureStacks: []
+Index: Assets/3TechArt Test/TechArt_testScene/GlobalVolume Profile.asset
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>%YAML 1.1\r\n%TAG !u! tag:unity3d.com,2011:\r\n--- !u!114 &-8273006700308003735\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 3\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 0}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: 66f335fb1ffd8684294ad653bf1c7564, type: 3}\r\n  m_Name: ColorAdjustments\r\n  m_EditorClassIdentifier: \r\n  active: 1\r\n  postExposure:\r\n    m_OverrideState: 0\r\n    m_Value: 0\r\n  contrast:\r\n    m_OverrideState: 1\r\n    m_Value: 14.7\r\n  colorFilter:\r\n    m_OverrideState: 0\r\n    m_Value: {r: 1, g: 1, b: 1, a: 1}\r\n  hueShift:\r\n    m_OverrideState: 0\r\n    m_Value: 0\r\n  saturation:\r\n    m_OverrideState: 0\r\n    m_Value: 0\r\n--- !u!114 &11400000\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 0}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}\r\n  m_Name: GlobalVolume Profile\r\n  m_EditorClassIdentifier: \r\n  components:\r\n  - {fileID: 2639733379816506548}\r\n  - {fileID: -8273006700308003735}\r\n  - {fileID: 299429812619845637}\r\n--- !u!114 &299429812619845637\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 3\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 0}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: 0b2db86121404754db890f4c8dfe81b2, type: 3}\r\n  m_Name: Bloom\r\n  m_EditorClassIdentifier: \r\n  active: 1\r\n  threshold:\r\n    m_OverrideState: 0\r\n    m_Value: 0.9\r\n  intensity:\r\n    m_OverrideState: 0\r\n    m_Value: 0\r\n  scatter:\r\n    m_OverrideState: 0\r\n    m_Value: 0.7\r\n  clamp:\r\n    m_OverrideState: 0\r\n    m_Value: 65472\r\n  tint:\r\n    m_OverrideState: 0\r\n    m_Value: {r: 1, g: 1, b: 1, a: 1}\r\n  highQualityFiltering:\r\n    m_OverrideState: 0\r\n    m_Value: 0\r\n  skipIterations:\r\n    m_OverrideState: 0\r\n    m_Value: 1\r\n  dirtTexture:\r\n    m_OverrideState: 0\r\n    m_Value: {fileID: 0}\r\n    dimension: 1\r\n  dirtIntensity:\r\n    m_OverrideState: 0\r\n    m_Value: 0\r\n--- !u!114 &2639733379816506548\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 3\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 0}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: 97c23e3b12dc18c42a140437e53d3951, type: 3}\r\n  m_Name: Tonemapping\r\n  m_EditorClassIdentifier: \r\n  active: 1\r\n  mode:\r\n    m_OverrideState: 1\r\n    m_Value: 2\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/3TechArt Test/TechArt_testScene/GlobalVolume Profile.asset b/Assets/3TechArt Test/TechArt_testScene/GlobalVolume Profile.asset
+--- a/Assets/3TechArt Test/TechArt_testScene/GlobalVolume Profile.asset	(revision abbefe71e60a2b4e22b0b5c02d17459947993e90)
++++ b/Assets/3TechArt Test/TechArt_testScene/GlobalVolume Profile.asset	(date 1702816198475)
+@@ -58,11 +58,11 @@
+   m_EditorClassIdentifier: 
+   active: 1
+   threshold:
+-    m_OverrideState: 0
++    m_OverrideState: 1
+     m_Value: 0.9
+   intensity:
+-    m_OverrideState: 0
+-    m_Value: 0
++    m_OverrideState: 1
++    m_Value: 1
+   scatter:
+     m_OverrideState: 0
+     m_Value: 0.7
+Index: Assets/3TechArt Test/TechArt_testScene.unity
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>%YAML 1.1\r\n%TAG !u! tag:unity3d.com,2011:\r\n--- !u!29 &1\r\nOcclusionCullingSettings:\r\n  m_ObjectHideFlags: 0\r\n  serializedVersion: 2\r\n  m_OcclusionBakeSettings:\r\n    smallestOccluder: 5\r\n    smallestHole: 0.25\r\n    backfaceThreshold: 100\r\n  m_SceneGUID: 00000000000000000000000000000000\r\n  m_OcclusionCullingData: {fileID: 0}\r\n--- !u!104 &2\r\nRenderSettings:\r\n  m_ObjectHideFlags: 0\r\n  serializedVersion: 9\r\n  m_Fog: 0\r\n  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}\r\n  m_FogMode: 3\r\n  m_FogDensity: 0.01\r\n  m_LinearFogStart: 0\r\n  m_LinearFogEnd: 300\r\n  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}\r\n  m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}\r\n  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}\r\n  m_AmbientIntensity: 1\r\n  m_AmbientMode: 0\r\n  m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}\r\n  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}\r\n  m_HaloStrength: 0.5\r\n  m_FlareStrength: 1\r\n  m_FlareFadeSpeed: 3\r\n  m_HaloTexture: {fileID: 0}\r\n  m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}\r\n  m_DefaultReflectionMode: 0\r\n  m_DefaultReflectionResolution: 128\r\n  m_ReflectionBounces: 1\r\n  m_ReflectionIntensity: 1\r\n  m_CustomReflection: {fileID: 0}\r\n  m_Sun: {fileID: 0}\r\n  m_IndirectSpecularColor: {r: 0.18358704, g: 0.22910464, b: 0.3054494, a: 1}\r\n  m_UseRadianceAmbientProbe: 0\r\n--- !u!157 &3\r\nLightmapSettings:\r\n  m_ObjectHideFlags: 0\r\n  serializedVersion: 12\r\n  m_GIWorkflowMode: 1\r\n  m_GISettings:\r\n    serializedVersion: 2\r\n    m_BounceScale: 1\r\n    m_IndirectOutputScale: 1\r\n    m_AlbedoBoost: 1\r\n    m_EnvironmentLightingMode: 0\r\n    m_EnableBakedLightmaps: 1\r\n    m_EnableRealtimeLightmaps: 0\r\n  m_LightmapEditorSettings:\r\n    serializedVersion: 12\r\n    m_Resolution: 2\r\n    m_BakeResolution: 40\r\n    m_AtlasSize: 1024\r\n    m_AO: 0\r\n    m_AOMaxDistance: 1\r\n    m_CompAOExponent: 1\r\n    m_CompAOExponentDirect: 0\r\n    m_ExtractAmbientOcclusion: 0\r\n    m_Padding: 2\r\n    m_LightmapParameters: {fileID: 0}\r\n    m_LightmapsBakeMode: 1\r\n    m_TextureCompression: 1\r\n    m_FinalGather: 0\r\n    m_FinalGatherFiltering: 1\r\n    m_FinalGatherRayCount: 256\r\n    m_ReflectionCompression: 2\r\n    m_MixedBakeMode: 2\r\n    m_BakeBackend: 1\r\n    m_PVRSampling: 1\r\n    m_PVRDirectSampleCount: 32\r\n    m_PVRSampleCount: 512\r\n    m_PVRBounces: 2\r\n    m_PVREnvironmentSampleCount: 256\r\n    m_PVREnvironmentReferencePointCount: 2048\r\n    m_PVRFilteringMode: 1\r\n    m_PVRDenoiserTypeDirect: 1\r\n    m_PVRDenoiserTypeIndirect: 1\r\n    m_PVRDenoiserTypeAO: 1\r\n    m_PVRFilterTypeDirect: 0\r\n    m_PVRFilterTypeIndirect: 0\r\n    m_PVRFilterTypeAO: 0\r\n    m_PVREnvironmentMIS: 1\r\n    m_PVRCulling: 1\r\n    m_PVRFilteringGaussRadiusDirect: 1\r\n    m_PVRFilteringGaussRadiusIndirect: 5\r\n    m_PVRFilteringGaussRadiusAO: 2\r\n    m_PVRFilteringAtrousPositionSigmaDirect: 0.5\r\n    m_PVRFilteringAtrousPositionSigmaIndirect: 2\r\n    m_PVRFilteringAtrousPositionSigmaAO: 1\r\n    m_ExportTrainingData: 0\r\n    m_TrainingDataDestination: TrainingData\r\n    m_LightProbeSampleCountMultiplier: 4\r\n  m_LightingDataAsset: {fileID: 0}\r\n  m_LightingSettings: {fileID: 0}\r\n--- !u!196 &4\r\nNavMeshSettings:\r\n  serializedVersion: 2\r\n  m_ObjectHideFlags: 0\r\n  m_BuildSettings:\r\n    serializedVersion: 2\r\n    agentTypeID: 0\r\n    agentRadius: 0.5\r\n    agentHeight: 2\r\n    agentSlope: 45\r\n    agentClimb: 0.4\r\n    ledgeDropHeight: 0\r\n    maxJumpAcrossDistance: 0\r\n    minRegionArea: 2\r\n    manualCellSize: 0\r\n    cellSize: 0.16666667\r\n    manualTileSize: 0\r\n    tileSize: 256\r\n    accuratePlacement: 0\r\n    maxJobWorkers: 0\r\n    preserveTilesOutsideBounds: 0\r\n    debug:\r\n      m_Flags: 0\r\n  m_NavMeshData: {fileID: 0}\r\n--- !u!1 &136999186\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 136999187}\r\n  m_Layer: 0\r\n  m_Name: Gameplay\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &136999187\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 136999186}\r\n  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 360172952}\r\n  - {fileID: 196331293}\r\n  - {fileID: 1530391224340506283}\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 2\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1001 &196331292\r\nPrefabInstance:\r\n  m_ObjectHideFlags: 0\r\n  serializedVersion: 2\r\n  m_Modification:\r\n    m_TransformParent: {fileID: 136999187}\r\n    m_Modifications:\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_RootOrder\r\n      value: 1\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalPosition.x\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalPosition.y\r\n      value: 0.871\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalPosition.z\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.w\r\n      value: 0.11680956\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.x\r\n      value: -0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.y\r\n      value: -0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.z\r\n      value: -0.99315435\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalEulerAnglesHint.x\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalEulerAnglesHint.y\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_LocalEulerAnglesHint.z\r\n      value: -166.584\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 8485773035889411859, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n        type: 3}\r\n      propertyPath: m_Name\r\n      value: P_Projectile\r\n      objectReference: {fileID: 0}\r\n    m_RemovedComponents: []\r\n  m_SourcePrefab: {fileID: 100100000, guid: 41fc37ecf989b294b84b423c3e6ec603, type: 3}\r\n--- !u!4 &196331293 stripped\r\nTransform:\r\n  m_CorrespondingSourceObject: {fileID: 5360493502734600437, guid: 41fc37ecf989b294b84b423c3e6ec603,\r\n    type: 3}\r\n  m_PrefabInstance: {fileID: 196331292}\r\n  m_PrefabAsset: {fileID: 0}\r\n--- !u!1 &263032956\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 263032960}\r\n  - component: {fileID: 263032959}\r\n  - component: {fileID: 263032958}\r\n  - component: {fileID: 263032957}\r\n  m_Layer: 0\r\n  m_Name: shield body (1)\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!64 &263032957\r\nMeshCollider:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 263032956}\r\n  m_Material: {fileID: 0}\r\n  m_IsTrigger: 0\r\n  m_Enabled: 1\r\n  serializedVersion: 4\r\n  m_Convex: 0\r\n  m_CookingOptions: 30\r\n  m_Mesh: {fileID: 0}\r\n--- !u!23 &263032958\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 263032956}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: db3b666ffe4de8543b0a7c0f35d1ed35, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!33 &263032959\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 263032956}\r\n  m_Mesh: {fileID: 4300000, guid: 5580ab23a376e9f49a79aac5255b96c5, type: 2}\r\n--- !u!4 &263032960\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 263032956}\r\n  m_LocalRotation: {x: -0, y: 0.8423416, z: -0, w: 0.53894407}\r\n  m_LocalPosition: {x: -0.369, y: 0.001, z: 6.302}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 1\r\n  m_Children: []\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 6\r\n  m_LocalEulerAnglesHint: {x: 0, y: 114.776, z: 0}\r\n--- !u!1 &285347265\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 285347266}\r\n  m_Layer: 0\r\n  m_Name: Environment\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &285347266\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 285347265}\r\n  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 1428955591}\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 1\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1001 &360172951\r\nPrefabInstance:\r\n  m_ObjectHideFlags: 0\r\n  serializedVersion: 2\r\n  m_Modification:\r\n    m_TransformParent: {fileID: 136999187}\r\n    m_Modifications:\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_RootOrder\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalPosition.x\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalPosition.y\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalPosition.z\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.w\r\n      value: 1\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.x\r\n      value: -0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.y\r\n      value: -0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalRotation.z\r\n      value: -0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalEulerAnglesHint.x\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalEulerAnglesHint.y\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_LocalEulerAnglesHint.z\r\n      value: 0\r\n      objectReference: {fileID: 0}\r\n    - target: {fileID: 4147553925800009679, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n        type: 3}\r\n      propertyPath: m_Name\r\n      value: P_KHS_Tank\r\n      objectReference: {fileID: 0}\r\n    m_RemovedComponents: []\r\n  m_SourcePrefab: {fileID: 100100000, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73, type: 3}\r\n--- !u!4 &360172952 stripped\r\nTransform:\r\n  m_CorrespondingSourceObject: {fileID: 3658263196607071605, guid: 1e9f2fdc5fcd1f94db2173b79fe35f73,\r\n    type: 3}\r\n  m_PrefabInstance: {fileID: 360172951}\r\n  m_PrefabAsset: {fileID: 0}\r\n--- !u!1 &1353735773\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 1353735774}\r\n  - component: {fileID: 1353735776}\r\n  - component: {fileID: 1353735775}\r\n  m_Layer: 0\r\n  m_Name: Shields\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &1353735774\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1353735773}\r\n  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 1818202049}\r\n  m_Father: {fileID: 1530391224340506283}\r\n  m_RootOrder: 2\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!114 &1353735775\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1353735773}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: b70b7810f690fef4584e1d256d617cd7, type: 3}\r\n  m_Name: \r\n  m_EditorClassIdentifier: \r\n--- !u!54 &1353735776\r\nRigidbody:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1353735773}\r\n  serializedVersion: 2\r\n  m_Mass: 1\r\n  m_Drag: 0\r\n  m_AngularDrag: 0.05\r\n  m_UseGravity: 0\r\n  m_IsKinematic: 0\r\n  m_Interpolate: 0\r\n  m_Constraints: 0\r\n  m_CollisionDetection: 0\r\n--- !u!1 &1428955590\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 1428955591}\r\n  - component: {fileID: 1428955595}\r\n  - component: {fileID: 1428955594}\r\n  - component: {fileID: 1428955593}\r\n  - component: {fileID: 1428955592}\r\n  m_Layer: 0\r\n  m_Name: GroundPlane\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &1428955591\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1428955590}\r\n  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 25, y: 1, z: 25}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 285347266}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!65 &1428955592\r\nBoxCollider:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1428955590}\r\n  m_Material: {fileID: 0}\r\n  m_IsTrigger: 0\r\n  m_Enabled: 1\r\n  serializedVersion: 2\r\n  m_Size: {x: 10, y: 0.2, z: 10}\r\n  m_Center: {x: 0, y: -0.1, z: 0}\r\n--- !u!64 &1428955593\r\nMeshCollider:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1428955590}\r\n  m_Material: {fileID: 0}\r\n  m_IsTrigger: 0\r\n  m_Enabled: 0\r\n  serializedVersion: 4\r\n  m_Convex: 0\r\n  m_CookingOptions: 30\r\n  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}\r\n--- !u!23 &1428955594\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1428955590}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!33 &1428955595\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1428955590}\r\n  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}\r\n--- !u!1 &1548032888\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 1548032890}\r\n  - component: {fileID: 1548032889}\r\n  m_Layer: 0\r\n  m_Name: ShieldMeshSetup\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!114 &1548032889\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1548032888}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: 0ba6decd361dfc64e936b0e967a01874, type: 3}\r\n  m_Name: \r\n  m_EditorClassIdentifier: \r\n  mesh: {fileID: 2959467708922500008, guid: 7570f99490f8a26409c339187e4effdd, type: 3}\r\n--- !u!4 &1548032890\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1548032888}\r\n  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 4\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1 &1818202046\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 1818202049}\r\n  - component: {fileID: 1818202048}\r\n  - component: {fileID: 1818202047}\r\n  - component: {fileID: 1818202050}\r\n  m_Layer: 0\r\n  m_Name: shield body\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!23 &1818202047\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1818202046}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 028d012131cf9684ebcf793850634ff2, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!33 &1818202048\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1818202046}\r\n  m_Mesh: {fileID: 0}\r\n--- !u!4 &1818202049\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1818202046}\r\n  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 1\r\n  m_Children: []\r\n  m_Father: {fileID: 1353735774}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 0, y: 114.776, z: 0}\r\n--- !u!64 &1818202050\r\nMeshCollider:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 1818202046}\r\n  m_Material: {fileID: 0}\r\n  m_IsTrigger: 0\r\n  m_Enabled: 1\r\n  serializedVersion: 4\r\n  m_Convex: 0\r\n  m_CookingOptions: 30\r\n  m_Mesh: {fileID: 0}\r\n--- !u!1 &2066595379\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 2066595381}\r\n  - component: {fileID: 2066595380}\r\n  m_Layer: 0\r\n  m_Name: GlobalVolume\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!114 &2066595380\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2066595379}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}\r\n  m_Name: \r\n  m_EditorClassIdentifier: \r\n  m_IsGlobal: 1\r\n  priority: 0\r\n  blendDistance: 0\r\n  weight: 1\r\n  sharedProfile: {fileID: 11400000, guid: e332861f8c460d34b8675069f2f79a8f, type: 2}\r\n--- !u!4 &2066595381\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2066595379}\r\n  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 3\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1 &2070654814\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 2070654816}\r\n  - component: {fileID: 2070654815}\r\n  - component: {fileID: 2070654817}\r\n  m_Layer: 0\r\n  m_Name: Directional Light\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!108 &2070654815\r\nLight:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2070654814}\r\n  m_Enabled: 1\r\n  serializedVersion: 10\r\n  m_Type: 1\r\n  m_Shape: 0\r\n  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}\r\n  m_Intensity: 1\r\n  m_Range: 10\r\n  m_SpotAngle: 30\r\n  m_InnerSpotAngle: 21.80208\r\n  m_CookieSize: 10\r\n  m_Shadows:\r\n    m_Type: 2\r\n    m_Resolution: -1\r\n    m_CustomResolution: -1\r\n    m_Strength: 1\r\n    m_Bias: 0.05\r\n    m_NormalBias: 0.4\r\n    m_NearPlane: 0.2\r\n    m_CullingMatrixOverride:\r\n      e00: 1\r\n      e01: 0\r\n      e02: 0\r\n      e03: 0\r\n      e10: 0\r\n      e11: 1\r\n      e12: 0\r\n      e13: 0\r\n      e20: 0\r\n      e21: 0\r\n      e22: 1\r\n      e23: 0\r\n      e30: 0\r\n      e31: 0\r\n      e32: 0\r\n      e33: 1\r\n    m_UseCullingMatrixOverride: 0\r\n  m_Cookie: {fileID: 0}\r\n  m_DrawHalo: 0\r\n  m_Flare: {fileID: 0}\r\n  m_RenderMode: 0\r\n  m_CullingMask:\r\n    serializedVersion: 2\r\n    m_Bits: 4294967295\r\n  m_RenderingLayerMask: 1\r\n  m_Lightmapping: 4\r\n  m_LightShadowCasterMode: 0\r\n  m_AreaSize: {x: 1, y: 1}\r\n  m_BounceIntensity: 1\r\n  m_ColorTemperature: 6570\r\n  m_UseColorTemperature: 0\r\n  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}\r\n  m_UseBoundingSphereOverride: 0\r\n  m_UseViewFrustumForShadowCasterCull: 1\r\n  m_ShadowRadius: 0\r\n  m_ShadowAngle: 0\r\n--- !u!4 &2070654816\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2070654814}\r\n  m_LocalRotation: {x: 0.74194515, y: 0.4021767, z: 0.21319959, w: 0.49225727}\r\n  m_LocalPosition: {x: 0, y: 1.3291576, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 2124174722}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 33.984, y: 120.79, z: 103.379}\r\n--- !u!114 &2070654817\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2070654814}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}\r\n  m_Name: \r\n  m_EditorClassIdentifier: \r\n  m_Version: 1\r\n  m_UsePipelineSettings: 1\r\n  m_AdditionalLightsShadowResolutionTier: 2\r\n  m_LightLayerMask: 1\r\n  m_CustomShadowLayers: 0\r\n  m_ShadowLayerMask: 1\r\n  m_LightCookieSize: {x: 1, y: 1}\r\n  m_LightCookieOffset: {x: 0, y: 0}\r\n--- !u!1 &2124174721\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 2124174722}\r\n  m_Layer: 0\r\n  m_Name: Lighting\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &2124174722\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2124174721}\r\n  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 2070654816}\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1 &2131834108\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 2131834112}\r\n  - component: {fileID: 2131834111}\r\n  - component: {fileID: 2131834110}\r\n  - component: {fileID: 2131834109}\r\n  - component: {fileID: 2131834113}\r\n  m_Layer: 0\r\n  m_Name: Camera\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!114 &2131834109\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2131834108}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}\r\n  m_Name: \r\n  m_EditorClassIdentifier: \r\n  m_RenderShadows: 1\r\n  m_RequiresDepthTextureOption: 2\r\n  m_RequiresOpaqueTextureOption: 2\r\n  m_CameraType: 0\r\n  m_Cameras: []\r\n  m_RendererIndex: -1\r\n  m_VolumeLayerMask:\r\n    serializedVersion: 2\r\n    m_Bits: 1\r\n  m_VolumeTrigger: {fileID: 0}\r\n  m_VolumeFrameworkUpdateModeOption: 2\r\n  m_RenderPostProcessing: 1\r\n  m_Antialiasing: 0\r\n  m_AntialiasingQuality: 2\r\n  m_StopNaN: 0\r\n  m_Dithering: 0\r\n  m_ClearDepth: 1\r\n  m_AllowXRRendering: 1\r\n  m_RequiresDepthTexture: 0\r\n  m_RequiresColorTexture: 0\r\n  m_Version: 2\r\n--- !u!81 &2131834110\r\nAudioListener:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2131834108}\r\n  m_Enabled: 1\r\n--- !u!20 &2131834111\r\nCamera:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2131834108}\r\n  m_Enabled: 1\r\n  serializedVersion: 2\r\n  m_ClearFlags: 1\r\n  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}\r\n  m_projectionMatrixMode: 1\r\n  m_GateFitMode: 2\r\n  m_FOVAxisMode: 0\r\n  m_SensorSize: {x: 36, y: 24}\r\n  m_LensShift: {x: 0, y: 0}\r\n  m_FocalLength: 50\r\n  m_NormalizedViewPortRect:\r\n    serializedVersion: 2\r\n    x: 0\r\n    y: 0\r\n    width: 1\r\n    height: 1\r\n  near clip plane: 0.3\r\n  far clip plane: 1000\r\n  field of view: 60\r\n  orthographic: 0\r\n  orthographic size: 5\r\n  m_Depth: 0\r\n  m_CullingMask:\r\n    serializedVersion: 2\r\n    m_Bits: 4294967295\r\n  m_RenderingPath: -1\r\n  m_TargetTexture: {fileID: 0}\r\n  m_TargetDisplay: 0\r\n  m_TargetEye: 3\r\n  m_HDR: 1\r\n  m_AllowMSAA: 1\r\n  m_AllowDynamicResolution: 0\r\n  m_ForceIntoRT: 0\r\n  m_OcclusionCulling: 1\r\n  m_StereoConvergence: 10\r\n  m_StereoSeparation: 0.022\r\n--- !u!4 &2131834112\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2131834108}\r\n  m_LocalRotation: {x: -0.12060111, y: -0.121192746, z: 0.014830978, w: -0.9851638}\r\n  m_LocalPosition: {x: -2.0643628, y: 1.7285118, z: -2.4040127}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 0}\r\n  m_RootOrder: 5\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!114 &2131834113\r\nMonoBehaviour:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2131834108}\r\n  m_Enabled: 1\r\n  m_EditorHideFlags: 0\r\n  m_Script: {fileID: 11500000, guid: b1c7c613eff236e479e2ad9f8fd7028e, type: 3}\r\n  m_Name: \r\n  m_EditorClassIdentifier: \r\n  boost: 3.5\r\n  positionLerpTime: 0.2\r\n  mouseSensitivity: 60\r\n  mouseSensitivityCurve:\r\n    serializedVersion: 2\r\n    m_Curve:\r\n    - serializedVersion: 3\r\n      time: 0\r\n      value: 0.5\r\n      inSlope: 0\r\n      outSlope: 5\r\n      tangentMode: 0\r\n      weightedMode: 0\r\n      inWeight: 0\r\n      outWeight: 0\r\n    - serializedVersion: 3\r\n      time: 1\r\n      value: 2.5\r\n      inSlope: 0\r\n      outSlope: 0\r\n      tangentMode: 0\r\n      weightedMode: 0\r\n      inWeight: 0\r\n      outWeight: 0\r\n    m_PreInfinity: 2\r\n    m_PostInfinity: 2\r\n    m_RotationOrder: 4\r\n  rotationLerpTime: 0.01\r\n  invertY: 1\r\n--- !u!4 &87274125809970211\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 8686637179932981036}\r\n  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 759763031442362894}\r\n  - {fileID: 4253819017733139689}\r\n  - {fileID: 419454152517554132}\r\n  - {fileID: 801676852376327417}\r\n  - {fileID: 5649745265771845689}\r\n  - {fileID: 2303097305329422342}\r\n  - {fileID: 2826694983355295580}\r\n  - {fileID: 6263025242125608462}\r\n  - {fileID: 1899978282982060499}\r\n  m_Father: {fileID: 1530391224340506283}\r\n  m_RootOrder: 1\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!33 &315668040003147097\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2900418181577605409}\r\n  m_Mesh: {fileID: 2165579551946672802, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!4 &419454152517554132\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 7452161676952917189}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.002252388, y: 0.05314848, z: 0.0871847}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 2\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!4 &759763031442362894\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5845428011992177090}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.29558548, y: 0.115639456, z: -0.079592414}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!4 &801676852376327417\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 8261136738067965908}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.002252388, y: 0.1600381, z: 0.03412888}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 3\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!4 &1530391224340506283\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2195181670716455953}\r\n  m_LocalRotation: {x: -0, y: 0.8423416, z: -0, w: 0.53894407}\r\n  m_LocalPosition: {x: 0.01, y: 0, z: 7.12}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 5723879064493164935}\r\n  - {fileID: 87274125809970211}\r\n  - {fileID: 1353735774}\r\n  m_Father: {fileID: 136999187}\r\n  m_RootOrder: 2\r\n  m_LocalEulerAnglesHint: {x: 0, y: 114.776, z: 0}\r\n--- !u!23 &1882737711853996487\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 4700354074550106387}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!4 &1899978282982060499\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5618203577129427094}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: -0.33898395, y: 0.11351044, z: 0.30102864}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 8\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!33 &1901513113753164188\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 7891765769757327333}\r\n  m_Mesh: {fileID: -6804327308018479098, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!33 &2107068856938871798\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 4700354074550106387}\r\n  m_Mesh: {fileID: 1849756746927777339, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!1 &2195181670716455953\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 1530391224340506283}\r\n  m_Layer: 0\r\n  m_Name: P_KHS_Tank_2(Target Tank)\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &2303097305329422342\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 4700354074550106387}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.002252388, y: 0.1600381, z: -0.1790181}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 5\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!23 &2562072234676387787\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5802034210607236014}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!33 &2758100739275910239\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 9109516876181792725}\r\n  m_Mesh: {fileID: 2959467708922500008, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!4 &2826694983355295580\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 7891765769757327333}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.002252388, y: 0.05314848, z: -0.24707638}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 6\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1 &2900418181577605409\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 7588273553238204675}\r\n  - component: {fileID: 315668040003147097}\r\n  - component: {fileID: 7075640189431869794}\r\n  m_Layer: 0\r\n  m_Name: Turret\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!33 &2913258429298926634\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 7452161676952917189}\r\n  m_Mesh: {fileID: -8920639668913421116, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!33 &2939927988616465615\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 8261136738067965908}\r\n  m_Mesh: {fileID: -5173257117609739693, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!1 &3746954935561730225\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 6263025242125608462}\r\n  - component: {fileID: 7249462983966011397}\r\n  - component: {fileID: 4064856485003234547}\r\n  m_Layer: 0\r\n  m_Name: WheelFront\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!23 &3983839921037197358\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5845428011992177090}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!23 &4064856485003234547\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 3746954935561730225}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!4 &4253819017733139689\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5802034210607236014}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: -0.29108065, y: 0.115639456, z: -0.07959241}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 1\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!33 &4294920236080559396\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5845428011992177090}\r\n  m_Mesh: {fileID: -4691199208434340982, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!23 &4638258893579787124\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5618203577129427094}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!1 &4700354074550106387\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 2303097305329422342}\r\n  - component: {fileID: 2107068856938871798}\r\n  - component: {fileID: 1882737711853996487}\r\n  m_Layer: 0\r\n  m_Name: TrackWheels3\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!1 &5238945872166026823\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 5649745265771845689}\r\n  - component: {fileID: 8771875283786103799}\r\n  - component: {fileID: 7734946059138537889}\r\n  m_Layer: 0\r\n  m_Name: TrackWheels2\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!23 &5440321557572651407\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 7452161676952917189}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!1 &5618203577129427094\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 1899978282982060499}\r\n  - component: {fileID: 6686819011856028131}\r\n  - component: {fileID: 4638258893579787124}\r\n  m_Layer: 0\r\n  m_Name: WheelFront1\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &5649745265771845689\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5238945872166026823}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.002252388, y: 0.05314848, z: -0.07634777}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 4\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!4 &5723879064493164935\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 9109516876181792725}\r\n  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children:\r\n  - {fileID: 7588273553238204675}\r\n  m_Father: {fileID: 1530391224340506283}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!1 &5802034210607236014\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 4253819017733139689}\r\n  - component: {fileID: 6524406388999533337}\r\n  - component: {fileID: 2562072234676387787}\r\n  m_Layer: 0\r\n  m_Name: Tracks2\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!1 &5845428011992177090\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 759763031442362894}\r\n  - component: {fileID: 4294920236080559396}\r\n  - component: {fileID: 3983839921037197358}\r\n  m_Layer: 0\r\n  m_Name: Tracks1\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!23 &6131280407183848603\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 9109516876181792725}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!4 &6263025242125608462\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 3746954935561730225}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: 0.34348872, y: 0.11351044, z: 0.30102864}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 87274125809970211}\r\n  m_RootOrder: 7\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!33 &6524406388999533337\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5802034210607236014}\r\n  m_Mesh: {fileID: 1712356399900417379, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!33 &6686819011856028131\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5618203577129427094}\r\n  m_Mesh: {fileID: -2106222850272760894, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!23 &6764107166835882720\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 7891765769757327333}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!23 &6871089531274915962\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 8261136738067965908}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!23 &7075640189431869794\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2900418181577605409}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!33 &7249462983966011397\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 3746954935561730225}\r\n  m_Mesh: {fileID: -1138694222626228724, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!1 &7452161676952917189\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 419454152517554132}\r\n  - component: {fileID: 2913258429298926634}\r\n  - component: {fileID: 5440321557572651407}\r\n  m_Layer: 0\r\n  m_Name: TrackWheels\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!4 &7588273553238204675\r\nTransform:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 2900418181577605409}\r\n  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}\r\n  m_LocalPosition: {x: -0, y: 0, z: 0}\r\n  m_LocalScale: {x: 1, y: 1, z: 1}\r\n  m_ConstrainProportionsScale: 0\r\n  m_Children: []\r\n  m_Father: {fileID: 5723879064493164935}\r\n  m_RootOrder: 0\r\n  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}\r\n--- !u!23 &7734946059138537889\r\nMeshRenderer:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5238945872166026823}\r\n  m_Enabled: 1\r\n  m_CastShadows: 1\r\n  m_ReceiveShadows: 1\r\n  m_DynamicOccludee: 1\r\n  m_StaticShadowCaster: 0\r\n  m_MotionVectors: 1\r\n  m_LightProbeUsage: 1\r\n  m_ReflectionProbeUsage: 1\r\n  m_RayTracingMode: 2\r\n  m_RayTraceProcedural: 0\r\n  m_RenderingLayerMask: 1\r\n  m_RendererPriority: 0\r\n  m_Materials:\r\n  - {fileID: 2100000, guid: 460476997e82c86478235e17e137bc21, type: 2}\r\n  m_StaticBatchInfo:\r\n    firstSubMesh: 0\r\n    subMeshCount: 0\r\n  m_StaticBatchRoot: {fileID: 0}\r\n  m_ProbeAnchor: {fileID: 0}\r\n  m_LightProbeVolumeOverride: {fileID: 0}\r\n  m_ScaleInLightmap: 1\r\n  m_ReceiveGI: 1\r\n  m_PreserveUVs: 0\r\n  m_IgnoreNormalsForChartDetection: 0\r\n  m_ImportantGI: 0\r\n  m_StitchLightmapSeams: 1\r\n  m_SelectedEditorRenderState: 3\r\n  m_MinimumChartSize: 4\r\n  m_AutoUVMaxDistance: 0.5\r\n  m_AutoUVMaxAngle: 89\r\n  m_LightmapParameters: {fileID: 0}\r\n  m_SortingLayerID: 0\r\n  m_SortingLayer: 0\r\n  m_SortingOrder: 0\r\n  m_AdditionalVertexStreams: {fileID: 0}\r\n--- !u!1 &7891765769757327333\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 2826694983355295580}\r\n  - component: {fileID: 1901513113753164188}\r\n  - component: {fileID: 6764107166835882720}\r\n  m_Layer: 0\r\n  m_Name: TrackWheels4\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!1 &8261136738067965908\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 801676852376327417}\r\n  - component: {fileID: 2939927988616465615}\r\n  - component: {fileID: 6871089531274915962}\r\n  m_Layer: 0\r\n  m_Name: TrackWheels1\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!1 &8686637179932981036\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 87274125809970211}\r\n  m_Layer: 0\r\n  m_Name: Wheels\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n--- !u!33 &8771875283786103799\r\nMeshFilter:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_GameObject: {fileID: 5238945872166026823}\r\n  m_Mesh: {fileID: -7128891359932680326, guid: 25b14c0e27fb27a46bc38c7cde0955bb, type: 3}\r\n--- !u!1 &9109516876181792725\r\nGameObject:\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  serializedVersion: 6\r\n  m_Component:\r\n  - component: {fileID: 5723879064493164935}\r\n  - component: {fileID: 2758100739275910239}\r\n  - component: {fileID: 6131280407183848603}\r\n  m_Layer: 0\r\n  m_Name: Body\r\n  m_TagString: Untagged\r\n  m_Icon: {fileID: 0}\r\n  m_NavMeshLayer: 0\r\n  m_StaticEditorFlags: 0\r\n  m_IsActive: 1\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/3TechArt Test/TechArt_testScene.unity b/Assets/3TechArt Test/TechArt_testScene.unity
+--- a/Assets/3TechArt Test/TechArt_testScene.unity	(revision abbefe71e60a2b4e22b0b5c02d17459947993e90)
++++ b/Assets/3TechArt Test/TechArt_testScene.unity	(date 1702816198575)
+@@ -285,7 +285,7 @@
+   m_RenderingLayerMask: 1
+   m_RendererPriority: 0
+   m_Materials:
+-  - {fileID: 2100000, guid: db3b666ffe4de8543b0a7c0f35d1ed35, type: 2}
++  - {fileID: 2100000, guid: 8f997440e89c89b4e97e6774d50c5890, type: 2}
+   m_StaticBatchInfo:
+     firstSubMesh: 0
+     subMeshCount: 0
+@@ -361,6 +361,103 @@
+   - {fileID: 1428955591}
+   m_Father: {fileID: 0}
+   m_RootOrder: 1
++  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
++--- !u!1 &332723130
++GameObject:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  serializedVersion: 6
++  m_Component:
++  - component: {fileID: 332723134}
++  - component: {fileID: 332723133}
++  - component: {fileID: 332723132}
++  - component: {fileID: 332723131}
++  m_Layer: 0
++  m_Name: Sphere
++  m_TagString: Untagged
++  m_Icon: {fileID: 0}
++  m_NavMeshLayer: 0
++  m_StaticEditorFlags: 0
++  m_IsActive: 1
++--- !u!135 &332723131
++SphereCollider:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 332723130}
++  m_Material: {fileID: 0}
++  m_IsTrigger: 0
++  m_Enabled: 1
++  serializedVersion: 2
++  m_Radius: 0.5
++  m_Center: {x: 0, y: 0, z: 0}
++--- !u!23 &332723132
++MeshRenderer:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 332723130}
++  m_Enabled: 1
++  m_CastShadows: 1
++  m_ReceiveShadows: 1
++  m_DynamicOccludee: 1
++  m_StaticShadowCaster: 0
++  m_MotionVectors: 1
++  m_LightProbeUsage: 1
++  m_ReflectionProbeUsage: 1
++  m_RayTracingMode: 2
++  m_RayTraceProcedural: 0
++  m_RenderingLayerMask: 1
++  m_RendererPriority: 0
++  m_Materials:
++  - {fileID: 2100000, guid: 8f997440e89c89b4e97e6774d50c5890, type: 2}
++  m_StaticBatchInfo:
++    firstSubMesh: 0
++    subMeshCount: 0
++  m_StaticBatchRoot: {fileID: 0}
++  m_ProbeAnchor: {fileID: 0}
++  m_LightProbeVolumeOverride: {fileID: 0}
++  m_ScaleInLightmap: 1
++  m_ReceiveGI: 1
++  m_PreserveUVs: 0
++  m_IgnoreNormalsForChartDetection: 0
++  m_ImportantGI: 0
++  m_StitchLightmapSeams: 1
++  m_SelectedEditorRenderState: 3
++  m_MinimumChartSize: 4
++  m_AutoUVMaxDistance: 0.5
++  m_AutoUVMaxAngle: 89
++  m_LightmapParameters: {fileID: 0}
++  m_SortingLayerID: 0
++  m_SortingLayer: 0
++  m_SortingOrder: 0
++  m_AdditionalVertexStreams: {fileID: 0}
++--- !u!33 &332723133
++MeshFilter:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 332723130}
++  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
++--- !u!4 &332723134
++Transform:
++  m_ObjectHideFlags: 0
++  m_CorrespondingSourceObject: {fileID: 0}
++  m_PrefabInstance: {fileID: 0}
++  m_PrefabAsset: {fileID: 0}
++  m_GameObject: {fileID: 332723130}
++  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
++  m_LocalPosition: {x: 0.506, y: 0.299, z: 6.174}
++  m_LocalScale: {x: 0.42548, y: 0.42548, z: 0.42548}
++  m_ConstrainProportionsScale: 0
++  m_Children: []
++  m_Father: {fileID: 0}
++  m_RootOrder: 7
+   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+ --- !u!1001 &360172951
+ PrefabInstance:
+@@ -724,7 +821,7 @@
+   m_PrefabInstance: {fileID: 0}
+   m_PrefabAsset: {fileID: 0}
+   m_GameObject: {fileID: 1818202046}
+-  m_Mesh: {fileID: 0}
++  m_Mesh: {fileID: 4300000, guid: 5580ab23a376e9f49a79aac5255b96c5, type: 2}
+ --- !u!4 &1818202049
+ Transform:
+   m_ObjectHideFlags: 0
+Index: Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>%YAML 1.1\r\n%TAG !u! tag:unity3d.com,2011:\r\n--- !u!21 &2100000\r\nMaterial:\r\n  serializedVersion: 8\r\n  m_ObjectHideFlags: 0\r\n  m_CorrespondingSourceObject: {fileID: 0}\r\n  m_PrefabInstance: {fileID: 0}\r\n  m_PrefabAsset: {fileID: 0}\r\n  m_Name: Unlit_WireframeFixedWidth\r\n  m_Shader: {fileID: 4800000, guid: ef476725241011248970c976bb4f35a0, type: 3}\r\n  m_ValidKeywords: []\r\n  m_InvalidKeywords: []\r\n  m_LightmapFlags: 4\r\n  m_EnableInstancingVariants: 0\r\n  m_DoubleSidedGI: 0\r\n  m_CustomRenderQueue: 3000\r\n  stringTagMap: {}\r\n  disabledShaderPasses: []\r\n  m_SavedProperties:\r\n    serializedVersion: 3\r\n    m_TexEnvs:\r\n    - _MainTex:\r\n        m_Texture: {fileID: 0}\r\n        m_Scale: {x: 1, y: 1}\r\n        m_Offset: {x: 0, y: 0}\r\n    m_Ints: []\r\n    m_Floats:\r\n    - _Glossiness: 0.5\r\n    - _Metallic: 0\r\n    - _WireframeAliasing: 1.5\r\n    - _WireframeWidth: 1\r\n    m_Colors:\r\n    - _Color: {r: 0.1414382, g: 0.5471698, b: 0.36818916, a: 1}\r\n    - _WireframeBackColour: {r: 1, g: 1, b: 1, a: 1}\r\n    - _WireframeColor: {r: 1, g: 1, b: 1, a: 1}\r\n    - _WireframeColour: {r: 0, g: 0, b: 0, a: 1}\r\n    - _WireframeFrontColour: {r: 1, g: 1, b: 1, a: 1}\r\n  m_BuildTextureStacks: []\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat b/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat
+--- a/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat	(revision abbefe71e60a2b4e22b0b5c02d17459947993e90)
++++ b/Assets/5Shaders/HexaShieldShader/Unlit_WireframeFixedWidth.mat	(date 1702815870396)
+@@ -14,7 +14,7 @@
+   m_LightmapFlags: 4
+   m_EnableInstancingVariants: 0
+   m_DoubleSidedGI: 0
+-  m_CustomRenderQueue: 3000
++  m_CustomRenderQueue: -1
+   stringTagMap: {}
+   disabledShaderPasses: []
+   m_SavedProperties:
+Index: Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl b/Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl
+new file mode 100644
+--- /dev/null	(date 1668515968557)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl	(date 1668515968557)
+@@ -0,0 +1,310 @@
++#ifndef UNIVERSAL_FORWARD_LIT_PASS_INCLUDED
++#define UNIVERSAL_FORWARD_LIT_PASS_INCLUDED
++
++#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
++#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/UnityGBuffer.hlsl"
++
++// GLES2 has limited amount of interpolators
++#if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
++#define REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR
++#endif
++
++#if (defined(_NORMALMAP) || (defined(_PARALLAXMAP) && !defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR))) || defined(_DETAIL)
++#define REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR
++#endif
++
++// keep this file in sync with LitGBufferPass.hlsl
++
++struct Attributes
++{
++    float4 positionOS   : POSITION;
++    float3 normalOS     : NORMAL;
++    float4 tangentOS    : TANGENT;
++    float2 texcoord     : TEXCOORD0;
++    float2 staticLightmapUV   : TEXCOORD1;
++    float2 dynamicLightmapUV  : TEXCOORD2;
++    UNITY_VERTEX_INPUT_INSTANCE_ID
++};
++
++struct Varyings
++{
++    float2 uv                       : TEXCOORD0;
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    float3 positionWS               : TEXCOORD1;
++#endif
++
++    float3 normalWS                 : TEXCOORD2;
++#if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++    half4 tangentWS                : TEXCOORD3;    // xyz: tangent, w: sign
++#endif
++    float3 viewDirWS                : TEXCOORD4;
++
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    half4 fogFactorAndVertexLight   : TEXCOORD5; // x: fogFactor, yzw: vertex light
++#else
++    half  fogFactor                 : TEXCOORD5;
++#endif
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    float4 shadowCoord              : TEXCOORD6;
++#endif
++
++#if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirTS                : TEXCOORD7;
++#endif
++
++    DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 8);
++#ifdef DYNAMICLIGHTMAP_ON
++    float2  dynamicLightmapUV : TEXCOORD9; // Dynamic lightmap UVs
++#endif
++
++    float4 positionCS               : SV_POSITION;
++    UNITY_VERTEX_INPUT_INSTANCE_ID
++    UNITY_VERTEX_OUTPUT_STEREO
++};
++
++struct g2f {
++    float2 uv                       : TEXCOORD0;
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    float3 positionWS               : TEXCOORD1;
++#endif
++
++    float3 normalWS                 : TEXCOORD2;
++#if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++    half4 tangentWS                : TEXCOORD3;    // xyz: tangent, w: sign
++#endif
++    float3 viewDirWS                : TEXCOORD4;
++
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    half4 fogFactorAndVertexLight   : TEXCOORD5; // x: fogFactor, yzw: vertex light
++#else
++    half  fogFactor                 : TEXCOORD5;
++#endif
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    float4 shadowCoord              : TEXCOORD6;
++#endif
++
++#if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirTS                : TEXCOORD7;
++#endif
++
++    DECLARE_LIGHTMAP_OR_SH(staticLightmapUV, vertexSH, 8);
++#ifdef DYNAMICLIGHTMAP_ON
++    float2  dynamicLightmapUV : TEXCOORD9; // Dynamic lightmap UVs
++#endif
++
++    float4 positionCS               : SV_POSITION;
++
++    UNITY_VERTEX_INPUT_INSTANCE_ID
++    UNITY_VERTEX_OUTPUT_STEREO
++};
++
++void InitializeInputData(Varyings input, half3 normalTS, out InputData inputData)
++{
++    inputData = (InputData)0;
++
++#if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++    inputData.positionWS = input.positionWS;
++#endif
++
++    half3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);
++#if defined(_NORMALMAP) || defined(_DETAIL)
++    float sgn = input.tangentWS.w;      // should be either +1 or -1
++    float3 bitangent = sgn * cross(input.normalWS.xyz, input.tangentWS.xyz);
++    half3x3 tangentToWorld = half3x3(input.tangentWS.xyz, bitangent.xyz, input.normalWS.xyz);
++
++    #if defined(_NORMALMAP)
++    inputData.tangentToWorld = tangentToWorld;
++    #endif
++    inputData.normalWS = TransformTangentToWorld(normalTS, tangentToWorld);
++#else
++    inputData.normalWS = input.normalWS;
++#endif
++
++    inputData.normalWS = NormalizeNormalPerPixel(inputData.normalWS);
++    inputData.viewDirectionWS = viewDirWS;
++
++#if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++    inputData.shadowCoord = input.shadowCoord;
++#elif defined(MAIN_LIGHT_CALCULATE_SHADOWS)
++    inputData.shadowCoord = TransformWorldToShadowCoord(inputData.positionWS);
++#else
++    inputData.shadowCoord = float4(0, 0, 0, 0);
++#endif
++#ifdef _ADDITIONAL_LIGHTS_VERTEX
++    inputData.fogCoord = InitializeInputDataFog(float4(input.positionWS, 1.0), input.fogFactorAndVertexLight.x);
++    inputData.vertexLighting = input.fogFactorAndVertexLight.yzw;
++#else
++    inputData.fogCoord = InitializeInputDataFog(float4(input.positionWS, 1.0), input.fogFactor);
++#endif
++
++#if defined(DYNAMICLIGHTMAP_ON)
++    inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.dynamicLightmapUV, input.vertexSH, inputData.normalWS);
++#else
++    inputData.bakedGI = SAMPLE_GI(input.staticLightmapUV, input.vertexSH, inputData.normalWS);
++#endif
++
++    inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
++    inputData.shadowMask = SAMPLE_SHADOWMASK(input.staticLightmapUV);
++
++    #if defined(DEBUG_DISPLAY)
++    #if defined(DYNAMICLIGHTMAP_ON)
++    inputData.dynamicLightmapUV = input.dynamicLightmapUV;
++    #endif
++    #if defined(LIGHTMAP_ON)
++    inputData.staticLightmapUV = input.staticLightmapUV;
++    #else
++    inputData.vertexSH = input.vertexSH;
++    #endif
++    #endif
++}
++
++///////////////////////////////////////////////////////////////////////////////
++//                  Vertex and Fragment functions                            //
++///////////////////////////////////////////////////////////////////////////////
++
++// Used in Standard (Physically Based) shader
++Varyings LitGBufferPassVertex(Attributes input)
++{
++    Varyings output = (Varyings)0;
++
++    UNITY_SETUP_INSTANCE_ID(input);
++    UNITY_TRANSFER_INSTANCE_ID(input, output);
++    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
++
++    VertexPositionInputs vertexInput = GetVertexPositionInputs(input.positionOS.xyz);
++
++    // normalWS and tangentWS already normalize.
++    // this is required to avoid skewing the direction during interpolation
++    // also required for per-vertex lighting and SH evaluation
++    VertexNormalInputs normalInput = GetVertexNormalInputs(input.normalOS, input.tangentOS);
++
++    output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);
++
++    // already normalized from normal transform to WS.
++    output.normalWS = normalInput.normalWS;
++
++    #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR) || defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++        real sign = input.tangentOS.w * GetOddNegativeScale();
++        half4 tangentWS = half4(normalInput.tangentWS.xyz, sign);
++    #endif
++
++    #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++        output.tangentWS = tangentWS;
++    #endif
++
++    #if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++        half3 viewDirWS = GetWorldSpaceNormalizeViewDir(vertexInput.positionWS);
++        half3 viewDirTS = GetViewDirectionTangentSpace(tangentWS, output.normalWS, viewDirWS);
++        output.viewDirTS = viewDirTS;
++    #endif
++
++    OUTPUT_LIGHTMAP_UV(input.staticLightmapUV, unity_LightmapST, output.staticLightmapUV);
++#ifdef DYNAMICLIGHTMAP_ON
++    output.dynamicLightmapUV = input.dynamicLightmapUV.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
++#endif
++    OUTPUT_SH(output.normalWS.xyz, output.vertexSH);
++
++    #ifdef _ADDITIONAL_LIGHTS_VERTEX
++        half3 vertexLight = VertexLighting(vertexInput.positionWS, normalInput.normalWS);
++        output.vertexLighting = vertexLight;
++    #endif
++
++    #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++        output.positionWS = vertexInput.positionWS;
++    #endif
++
++    #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++        output.shadowCoord = GetShadowCoord(vertexInput);
++    #endif
++
++    output.positionCS = vertexInput.positionCS;
++
++    return output;
++}
++
++[maxvertexcount(3)]
++void geomGBuffer(triangle Varyings IN[3], inout TriangleStream<g2f> triStream) {
++    g2f o = (g2f)0;
++
++    for (int i = 0; i < 3; i++)
++    {
++        //o.barycentric = float3(1.0, 0.0, 0.0);
++        o.uv = IN[i].uv;
++        o.normalWS = IN[i].normalWS;
++        o.viewDirWS = IN[i].viewDirWS;
++
++        #if defined(REQUIRES_WORLD_SPACE_POS_INTERPOLATOR)
++        o.positionWS = IN[i].positionWS;
++        #endif
++    
++        #if defined(REQUIRES_WORLD_SPACE_TANGENT_INTERPOLATOR)
++        o.tangentWS = IN[i].tangentWS;
++        #endif
++
++        #ifdef _ADDITIONAL_LIGHTS_VERTEX
++        o.fogFactorAndVertexLight = IN[i].fogFactorAndVertexLight;
++        #else
++        o.fogFactor = IN[i].fogFactor;
++        #endif
++    
++        #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
++        o.shadowCoord = IN[i].shadowCoord;
++        #endif
++
++        #if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++        o.viewDirTS = IN[i].viewDirTS;
++        #endif
++    
++        #ifdef DYNAMICLIGHTMAP_ON
++        o.dynamicLightmapUV = IN[i].dynamicLightmapUV;
++        #endif
++
++        triStream.Append(o);
++    }
++}
++
++// Used in Standard (Physically Based) shader
++FragmentOutput LitGBufferPassFragment(Varyings input)
++{
++    UNITY_SETUP_INSTANCE_ID(input);
++    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
++
++    #if defined(_PARALLAXMAP)
++    #if defined(REQUIRES_TANGENT_SPACE_VIEW_DIR_INTERPOLATOR)
++    half3 viewDirTS = input.viewDirTS;
++    #else
++    half3 viewDirTS = GetViewDirectionTangentSpace(input.tangentWS, input.normalWS, input.viewDirWS);
++    #endif
++    ApplyPerPixelDisplacement(viewDirTS, input.uv);
++    #endif
++
++    SurfaceData surfaceData;
++    InitializeStandardLitSurfaceData(input.uv, surfaceData);
++
++    InputData inputData;
++    InitializeInputData(input, surfaceData.normalTS, inputData);
++    SETUP_DEBUG_TEXTURE_DATA(inputData, input.uv, _BaseMap);
++
++    #ifdef _DBUFFER
++    ApplyDecalToSurfaceData(input.positionCS, surfaceData, inputData);
++    #endif
++
++    // Stripped down version of UniversalFragmentPBR().
++
++    // in LitForwardPass GlobalIllumination (and temporarily LightingPhysicallyBased) are called inside UniversalFragmentPBR
++    // in Deferred rendering we store the sum of these values (and of emission as well) in the GBuffer
++    BRDFData brdfData;
++    InitializeBRDFData(surfaceData.albedo, surfaceData.metallic, surfaceData.specular, surfaceData.smoothness, surfaceData.alpha, brdfData);
++
++    Light mainLight = GetMainLight(inputData.shadowCoord, inputData.positionWS, inputData.shadowMask);
++    MixRealtimeAndBakedGI(mainLight, inputData.normalWS, inputData.bakedGI, inputData.shadowMask);
++    half3 color = GlobalIllumination(brdfData, inputData.bakedGI, surfaceData.occlusion, inputData.positionWS, inputData.normalWS, inputData.viewDirectionWS);
++
++    return BRDFDataToGbuffer(brdfData, inputData, surfaceData.smoothness, surfaceData.emission + color, surfaceData.occlusion);
++}
++
++#endif
+\ No newline at end of file
+Index: Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat.meta
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat.meta b/Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat.meta
+new file mode 100644
+--- /dev/null	(date 1702815882291)
++++ b/Assets/5Shaders/HexaShieldShader/Universal Render Pipeline_Lit2.mat.meta	(date 1702815882291)
+@@ -0,0 +1,8 @@
++fileFormatVersion: 2
++guid: 8f997440e89c89b4e97e6774d50c5890
++NativeFormatImporter:
++  externalObjects: {}
++  mainObjectFileID: 2100000
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+Index: Assets/5Shaders/HexaShieldShader/TriangleLit.shader
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLit.shader b/Assets/5Shaders/HexaShieldShader/TriangleLit.shader
+new file mode 100644
+--- /dev/null	(date 1668515968556)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLit.shader	(date 1668515968556)
+@@ -0,0 +1,621 @@
++Shader "Universal Render Pipeline/Lit2"
++{
++    Properties
++    {
++        _TotalTime("Total triangle time", Float) = 0.0
++        _OutlineGradient("Gradient outline texture to apply over time", 2D) = "white" {}
++
++        
++        // Specular vs Metallic workflow
++        _WorkflowMode("WorkflowMode", Float) = 1.0
++
++        [MainTexture] _BaseMap("Albedo", 2D) = "white" {}
++        [MainColor] _BaseColor("Color", Color) = (1,1,1,1)
++
++        _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
++
++        _Smoothness("Smoothness", Range(0.0, 1.0)) = 0.5
++        _SmoothnessTextureChannel("Smoothness texture channel", Float) = 0
++        
++        _Smoothness2("Smoothness", Range(0.0, 1.0)) = 0.5
++        _SmoothnessTextureChannel2("Smoothness texture channel", Float) = 0
++
++        _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
++        _MetallicGlossMap("Metallic", 2D) = "white" {}
++
++        _SpecColor("Specular", Color) = (0.2, 0.2, 0.2)
++        _SpecGlossMap("Specular", 2D) = "white" {}
++
++        [ToggleOff] _SpecularHighlights("Specular Highlights", Float) = 1.0
++        [ToggleOff] _EnvironmentReflections("Environment Reflections", Float) = 1.0
++
++        _BumpScale("Scale", Float) = 1.0
++        _BumpMap("Normal Map", 2D) = "bump" {}
++
++        _Parallax("Scale", Range(0.005, 0.08)) = 0.005
++        _ParallaxMap("Height Map", 2D) = "black" {}
++
++        _OcclusionStrength("Strength", Range(0.0, 1.0)) = 1.0
++        _OcclusionMap("Occlusion", 2D) = "white" {}
++
++        [HDR] _EmissionColor("Color", Color) = (0,0,0)
++        _EmissionMap("Emission", 2D) = "white" {}
++
++        _DetailMask("Detail Mask", 2D) = "white" {}
++        _DetailAlbedoMapScale("Scale", Range(0.0, 2.0)) = 1.0
++        _DetailAlbedoMap("Detail Albedo x2", 2D) = "linearGrey" {}
++        _DetailNormalMapScale("Scale", Range(0.0, 2.0)) = 1.0
++        [Normal] _DetailNormalMap("Normal Map", 2D) = "bump" {}
++
++        // SRP batching compatibility for Clear Coat (Not used in Lit)
++        [HideInInspector] _ClearCoatMask("_ClearCoatMask", Float) = 0.0
++        [HideInInspector] _ClearCoatSmoothness("_ClearCoatSmoothness", Float) = 0.0
++
++        // Blending state
++        _Surface("__surface", Float) = 0.0
++        _Blend("__blend", Float) = 0.0
++        _Cull("__cull", Float) = 2.0
++        [ToggleUI] _AlphaClip("__clip", Float) = 0.0
++        [HideInInspector] _SrcBlend("__src", Float) = 1.0
++        [HideInInspector] _DstBlend("__dst", Float) = 0.0
++        [HideInInspector] _ZWrite("__zw", Float) = 1.0
++
++        [ToggleUI] _ReceiveShadows("Receive Shadows", Float) = 1.0
++        // Editmode props
++        _QueueOffset("Queue offset", Float) = 0.0
++
++        // ObsoleteProperties
++        [HideInInspector] _MainTex("BaseMap", 2D) = "white" {}
++        [HideInInspector] _Color("Base Color", Color) = (1, 1, 1, 1)
++        [HideInInspector] _GlossMapScale("Smoothness", Float) = 0.0
++        [HideInInspector] _Glossiness("Smoothness", Float) = 0.0
++        [HideInInspector] _GlossyReflections("EnvironmentReflections", Float) = 0.0
++
++        [HideInInspector][NoScaleOffset]unity_Lightmaps("unity_Lightmaps", 2DArray) = "" {}
++        [HideInInspector][NoScaleOffset]unity_LightmapsInd("unity_LightmapsInd", 2DArray) = "" {}
++        [HideInInspector][NoScaleOffset]unity_ShadowMasks("unity_ShadowMasks", 2DArray) = "" {}
++    }
++
++    SubShader
++    {
++        // Universal Pipeline tag is required. If Universal render pipeline is not set in the graphics settings
++        // this Subshader will fail. One can add a subshader below or fallback to Standard built-in to make this
++        // material work with both Universal Render Pipeline and Builtin Unity Pipeline
++        Tags{"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "True" "ShaderModel"="4.5"}
++        LOD 300
++
++        // ------------------------------------------------------------------
++        //  Forward pass. Shades all light in a single pass. GI + emission + Fog
++        Pass
++        {
++            // Lightmode matches the ShaderPassName set in UniversalRenderPipeline.cs. SRPDefaultUnlit and passes with
++            // no LightMode tag are also rendered by Universal Render Pipeline
++            Name "ForwardLit"
++            Tags{"LightMode" = "UniversalForward"}
++
++            Blend[_SrcBlend][_DstBlend]
++            ZWrite[_ZWrite]
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local _NORMALMAP
++            #pragma shader_feature_local _PARALLAXMAP
++            #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++            #pragma shader_feature_local_fragment _SURFACE_TYPE_TRANSPARENT
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
++            #pragma shader_feature_local_fragment _EMISSION
++            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++            #pragma shader_feature_local_fragment _OCCLUSIONMAP
++            #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
++            #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
++            #pragma shader_feature_local_fragment _SPECULAR_SETUP
++
++            // -------------------------------------
++            // Universal Pipeline keywords
++            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
++            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
++            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
++            #pragma multi_compile_fragment _ _SHADOWS_SOFT
++            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
++            #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
++            #pragma multi_compile_fragment _ _LIGHT_LAYERS
++            #pragma multi_compile_fragment _ _LIGHT_COOKIES
++            #pragma multi_compile _ _CLUSTERED_RENDERING
++
++            // -------------------------------------
++            // Unity defined keywords
++            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
++            #pragma multi_compile _ SHADOWS_SHADOWMASK
++            #pragma multi_compile _ DIRLIGHTMAP_COMBINED
++            #pragma multi_compile _ LIGHTMAP_ON
++            #pragma multi_compile _ DYNAMICLIGHTMAP_ON
++            #pragma multi_compile_fog
++            #pragma multi_compile_fragment _ DEBUG_DISPLAY
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++            #pragma instancing_options renderinglayer
++            #pragma multi_compile _ DOTS_INSTANCING_ON
++
++            #pragma vertex LitPassVertex
++            #pragma geometry geom
++            #pragma fragment LitPassFragment
++
++            #include "TriangleLitInput.hlsl"
++            #include "TriangleLitPass.hlsl"
++            
++            ENDHLSL
++        }
++
++        Pass
++        {
++            Name "ShadowCaster"
++            Tags{"LightMode" = "ShadowCaster"}
++
++            ZWrite On
++            ZTest LEqual
++            ColorMask 0
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++            #pragma multi_compile _ DOTS_INSTANCING_ON
++
++            // -------------------------------------
++            // Universal Pipeline keywords
++
++            // This is used during shadow map generation to differentiate between directional and punctual light shadows, as they use different formulas to apply Normal Bias
++            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
++
++            #pragma vertex ShadowPassVertex
++            #pragma fragment ShadowPassFragment
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
++            ENDHLSL
++        }
++
++        Pass
++        {
++            // Lightmode matches the ShaderPassName set in UniversalRenderPipeline.cs. SRPDefaultUnlit and passes with
++            // no LightMode tag are also rendered by Universal Render Pipeline
++            Name "GBuffer"
++            Tags{"LightMode" = "UniversalGBuffer"}
++
++            ZWrite[_ZWrite]
++            ZTest LEqual
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local _NORMALMAP
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            //#pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
++            #pragma shader_feature_local_fragment _EMISSION
++            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++            #pragma shader_feature_local_fragment _OCCLUSIONMAP
++            #pragma shader_feature_local _PARALLAXMAP
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++
++            #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
++            #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
++            #pragma shader_feature_local_fragment _SPECULAR_SETUP
++            #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
++
++            // -------------------------------------
++            // Universal Pipeline keywords
++            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
++            //#pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
++            //#pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
++            #pragma multi_compile_fragment _ _SHADOWS_SOFT
++            #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
++            #pragma multi_compile_fragment _ _LIGHT_LAYERS
++            #pragma multi_compile_fragment _ _RENDER_PASS_ENABLED
++
++            // -------------------------------------
++            // Unity defined keywords
++            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
++            #pragma multi_compile _ SHADOWS_SHADOWMASK
++            #pragma multi_compile _ DIRLIGHTMAP_COMBINED
++            #pragma multi_compile _ LIGHTMAP_ON
++            #pragma multi_compile _ DYNAMICLIGHTMAP_ON
++            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++            #pragma instancing_options renderinglayer
++            #pragma multi_compile _ DOTS_INSTANCING_ON
++
++            #pragma vertex LitGBufferPassVertex
++            #pragma geometry geomGBuffer
++            #pragma fragment LitGBufferPassFragment
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "TriangleLitGBufferPass.hlsl"
++            ENDHLSL
++        }
++
++        Pass
++        {
++            Name "DepthOnly"
++            Tags{"LightMode" = "DepthOnly"}
++
++            ZWrite On
++            ColorMask 0
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            #pragma vertex DepthOnlyVertex
++            #pragma fragment DepthOnlyFragment
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++            #pragma multi_compile _ DOTS_INSTANCING_ON
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
++            ENDHLSL
++        }
++
++        // This pass is used when drawing to a _CameraNormalsTexture texture
++        Pass
++        {
++            Name "DepthNormals"
++            Tags{"LightMode" = "DepthNormals"}
++
++            ZWrite On
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            #pragma vertex DepthNormalsVertex
++            #pragma fragment DepthNormalsFragment
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local _NORMALMAP
++            #pragma shader_feature_local _PARALLAXMAP
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++            #pragma multi_compile _ DOTS_INSTANCING_ON
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
++            ENDHLSL
++        }
++
++        // This pass it not used during regular rendering, only for lightmap baking.
++        Pass
++        {
++            Name "Meta"
++            Tags{"LightMode" = "Meta"}
++
++            Cull Off
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            #pragma vertex UniversalVertexMeta
++            #pragma fragment UniversalFragmentMetaLit
++
++            #pragma shader_feature EDITOR_VISUALIZATION
++            #pragma shader_feature_local_fragment _SPECULAR_SETUP
++            #pragma shader_feature_local_fragment _EMISSION
++            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++
++            #pragma shader_feature_local_fragment _SPECGLOSSMAP
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitMetaPass.hlsl"
++
++            ENDHLSL
++        }
++
++        Pass
++        {
++            Name "Universal2D"
++            Tags{ "LightMode" = "Universal2D" }
++
++            Blend[_SrcBlend][_DstBlend]
++            ZWrite[_ZWrite]
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma exclude_renderers gles gles3 glcore
++            #pragma target 4.5
++
++            #pragma vertex vert
++            #pragma fragment frag
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl"
++            ENDHLSL
++        }
++    }
++
++    SubShader
++    {
++        // Universal Pipeline tag is required. If Universal render pipeline is not set in the graphics settings
++        // this Subshader will fail. One can add a subshader below or fallback to Standard built-in to make this
++        // material work with both Universal Render Pipeline and Builtin Unity Pipeline
++        Tags{"RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" "UniversalMaterialType" = "Lit" "IgnoreProjector" = "True" "ShaderModel"="2.0"}
++        LOD 300
++
++        // ------------------------------------------------------------------
++        //  Forward pass. Shades all light in a single pass. GI + emission + Fog
++        Pass
++        {
++            // Lightmode matches the ShaderPassName set in UniversalRenderPipeline.cs. SRPDefaultUnlit and passes with
++            // no LightMode tag are also rendered by Universal Render Pipeline
++            Name "ForwardLit"
++            Tags{"LightMode" = "UniversalForward"}
++
++            Blend[_SrcBlend][_DstBlend]
++            ZWrite[_ZWrite]
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma only_renderers gles gles3 glcore d3d11
++            #pragma target 2.0
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++            #pragma instancing_options renderinglayer
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local _NORMALMAP
++            #pragma shader_feature_local _PARALLAXMAP
++            #pragma shader_feature_local _RECEIVE_SHADOWS_OFF
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++            #pragma shader_feature_local_fragment _SURFACE_TYPE_TRANSPARENT
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
++            #pragma shader_feature_local_fragment _EMISSION
++            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++            #pragma shader_feature_local_fragment _OCCLUSIONMAP
++            #pragma shader_feature_local_fragment _SPECULARHIGHLIGHTS_OFF
++            #pragma shader_feature_local_fragment _ENVIRONMENTREFLECTIONS_OFF
++            #pragma shader_feature_local_fragment _SPECULAR_SETUP
++
++            // -------------------------------------
++            // Universal Pipeline keywords
++            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
++            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
++            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
++            #pragma multi_compile_fragment _ _SHADOWS_SOFT
++            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
++            #pragma multi_compile_fragment _ _DBUFFER_MRT1 _DBUFFER_MRT2 _DBUFFER_MRT3
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
++            #pragma multi_compile_fragment _ _REFLECTION_PROBE_BOX_PROJECTION
++            #pragma multi_compile_fragment _ _LIGHT_LAYERS
++            #pragma multi_compile_fragment _ _LIGHT_COOKIES
++            #pragma multi_compile _ _CLUSTERED_RENDERING
++
++            // -------------------------------------
++            // Unity defined keywords
++            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
++            #pragma multi_compile _ SHADOWS_SHADOWMASK
++            #pragma multi_compile _ DIRLIGHTMAP_COMBINED
++            #pragma multi_compile _ LIGHTMAP_ON
++            #pragma multi_compile_fog
++            #pragma multi_compile_fragment _ DEBUG_DISPLAY
++
++            #pragma vertex LitPassVertex
++            #pragma fragment LitPassFragment
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitForwardPass.hlsl"
++            ENDHLSL
++        }
++
++        Pass
++        {
++            Name "ShadowCaster"
++            Tags{"LightMode" = "ShadowCaster"}
++
++            ZWrite On
++            ZTest LEqual
++            ColorMask 0
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma only_renderers gles gles3 glcore d3d11
++            #pragma target 2.0
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++
++            // -------------------------------------
++            // Universal Pipeline keywords
++
++            // This is used during shadow map generation to differentiate between directional and punctual light shadows, as they use different formulas to apply Normal Bias
++            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
++
++            #pragma vertex ShadowPassVertex
++            #pragma fragment ShadowPassFragment
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/ShadowCasterPass.hlsl"
++            ENDHLSL
++        }
++
++        Pass
++        {
++            Name "DepthOnly"
++            Tags{"LightMode" = "DepthOnly"}
++
++            ZWrite On
++            ColorMask 0
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma only_renderers gles gles3 glcore d3d11
++            #pragma target 2.0
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++
++            #pragma vertex DepthOnlyVertex
++            #pragma fragment DepthOnlyFragment
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/DepthOnlyPass.hlsl"
++            ENDHLSL
++        }
++
++        // This pass is used when drawing to a _CameraNormalsTexture texture
++        Pass
++        {
++            Name "DepthNormals"
++            Tags{"LightMode" = "DepthNormals"}
++
++            ZWrite On
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma only_renderers gles gles3 glcore d3d11
++            #pragma target 2.0
++
++            #pragma vertex DepthNormalsVertex
++            #pragma fragment DepthNormalsFragment
++
++            // -------------------------------------
++            // Material Keywords
++            #pragma shader_feature_local _NORMALMAP
++            #pragma shader_feature_local _PARALLAXMAP
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++
++            //--------------------------------------
++            // GPU Instancing
++            #pragma multi_compile_instancing
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitDepthNormalsPass.hlsl"
++            ENDHLSL
++        }
++
++        // This pass it not used during regular rendering, only for lightmap baking.
++        Pass
++        {
++            Name "Meta"
++            Tags{"LightMode" = "Meta"}
++
++            Cull Off
++
++            HLSLPROGRAM
++            #pragma only_renderers gles gles3 glcore d3d11
++            #pragma target 2.0
++
++            #pragma vertex UniversalVertexMeta
++            #pragma fragment UniversalFragmentMetaLit
++
++            #pragma shader_feature EDITOR_VISUALIZATION
++            #pragma shader_feature_local_fragment _SPECULAR_SETUP
++            #pragma shader_feature_local_fragment _EMISSION
++            #pragma shader_feature_local_fragment _METALLICSPECGLOSSMAP
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++            #pragma shader_feature_local _ _DETAIL_MULX2 _DETAIL_SCALED
++
++            #pragma shader_feature_local_fragment _SPECGLOSSMAP
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitMetaPass.hlsl"
++
++            ENDHLSL
++        }
++        Pass
++        {
++            Name "Universal2D"
++            Tags{ "LightMode" = "Universal2D" }
++
++            Blend[_SrcBlend][_DstBlend]
++            ZWrite[_ZWrite]
++            Cull[_Cull]
++
++            HLSLPROGRAM
++            #pragma only_renderers gles gles3 glcore d3d11
++            #pragma target 2.0
++
++            #pragma vertex vert
++            #pragma fragment frag
++            #pragma shader_feature_local_fragment _ALPHATEST_ON
++            #pragma shader_feature_local_fragment _ALPHAPREMULTIPLY_ON
++
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/LitInput.hlsl"
++            #include "Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl"
++            ENDHLSL
++        }
++    }
++
++    FallBack "Hidden/Universal Render Pipeline/FallbackError"
++    CustomEditor "UnityEditor.Rendering.Universal.ShaderGUI.LitShader"
++}
+Index: Assets/5Shaders/HexaShieldShader/TriangleLit.shader.meta
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLit.shader.meta b/Assets/5Shaders/HexaShieldShader/TriangleLit.shader.meta
+new file mode 100644
+--- /dev/null	(date 1702815857417)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLit.shader.meta	(date 1702815857417)
+@@ -0,0 +1,10 @@
++fileFormatVersion: 2
++guid: 5304fcdd4c2019a438210b76e7277991
++ShaderImporter:
++  externalObjects: {}
++  defaultTextures: []
++  nonModifiableTextures: []
++  preprocessorOverride: 0
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+Index: Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl.meta
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl.meta b/Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl.meta
+new file mode 100644
+--- /dev/null	(date 1702815856918)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLitPass.hlsl.meta	(date 1702815856918)
+@@ -0,0 +1,7 @@
++fileFormatVersion: 2
++guid: 597811e46e98bdc478fe25440f33d4e0
++ShaderIncludeImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+Index: Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl.meta
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl.meta b/Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl.meta
+new file mode 100644
+--- /dev/null	(date 1702815856941)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLitGBufferPass.hlsl.meta	(date 1702815856941)
+@@ -0,0 +1,7 @@
++fileFormatVersion: 2
++guid: 6be07f076cb9e8844afcf39f7e53e217
++ShaderIncludeImporter:
++  externalObjects: {}
++  userData: 
++  assetBundleName: 
++  assetBundleVariant: 
+Index: Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl b/Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl
+new file mode 100644
+--- /dev/null	(date 1668515968558)
++++ b/Assets/5Shaders/HexaShieldShader/TriangleLitInput.hlsl	(date 1668515968558)
+@@ -0,0 +1,245 @@
++#ifndef UNIVERSAL_LIT_INPUT_INCLUDED
++#define UNIVERSAL_LIT_INPUT_INCLUDED
++
++#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
++#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
++#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/SurfaceInput.hlsl"
++#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ParallaxMapping.hlsl"
++#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DBuffer.hlsl"
++
++#if defined(_DETAIL_MULX2) || defined(_DETAIL_SCALED)
++#define _DETAIL
++#endif
++
++// NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
++CBUFFER_START(UnityPerMaterial)
++float _TotalTime;
++float4 _BaseMap_ST;
++float4 _DetailAlbedoMap_ST;
++half4 _BaseColor;
++half4 _SpecColor;
++half4 _EmissionColor;
++half _Cutoff;
++half _Smoothness;
++half _Metallic;
++half _BumpScale;
++half _Parallax;
++half _OcclusionStrength;
++half _ClearCoatMask;
++half _ClearCoatSmoothness;
++half _DetailAlbedoMapScale;
++half _DetailNormalMapScale;
++half _Surface;
++CBUFFER_END
++
++// NOTE: Do not ifdef the properties for dots instancing, but ifdef the actual usage.
++// Otherwise you might break CPU-side as property constant-buffer offsets change per variant.
++// NOTE: Dots instancing is orthogonal to the constant buffer above.
++#ifdef UNITY_DOTS_INSTANCING_ENABLED
++UNITY_DOTS_INSTANCING_START(MaterialPropertyMetadata)
++    UNITY_DOTS_INSTANCED_PROP(float4, _BaseColor)
++    UNITY_DOTS_INSTANCED_PROP(float4, _SpecColor)
++    UNITY_DOTS_INSTANCED_PROP(float4, _EmissionColor)
++    UNITY_DOTS_INSTANCED_PROP(float , _Cutoff)
++    UNITY_DOTS_INSTANCED_PROP(float , _Smoothness)
++    UNITY_DOTS_INSTANCED_PROP(float , _Metallic)
++    UNITY_DOTS_INSTANCED_PROP(float , _BumpScale)
++    UNITY_DOTS_INSTANCED_PROP(float , _Parallax)
++    UNITY_DOTS_INSTANCED_PROP(float , _OcclusionStrength)
++    UNITY_DOTS_INSTANCED_PROP(float , _ClearCoatMask)
++    UNITY_DOTS_INSTANCED_PROP(float , _ClearCoatSmoothness)
++    UNITY_DOTS_INSTANCED_PROP(float , _DetailAlbedoMapScale)
++    UNITY_DOTS_INSTANCED_PROP(float , _DetailNormalMapScale)
++    UNITY_DOTS_INSTANCED_PROP(float , _Surface)
++UNITY_DOTS_INSTANCING_END(MaterialPropertyMetadata)
++
++#define _BaseColor              UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float4 , Metadata_BaseColor)
++#define _SpecColor              UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float4 , Metadata_SpecColor)
++#define _EmissionColor          UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float4 , Metadata_EmissionColor)
++#define _Cutoff                 UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_Cutoff)
++#define _Smoothness             UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_Smoothness)
++#define _Metallic               UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_Metallic)
++#define _BumpScale              UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_BumpScale)
++#define _Parallax               UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_Parallax)
++#define _OcclusionStrength      UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_OcclusionStrength)
++#define _ClearCoatMask          UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_ClearCoatMask)
++#define _ClearCoatSmoothness    UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_ClearCoatSmoothness)
++#define _DetailAlbedoMapScale   UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_DetailAlbedoMapScale)
++#define _DetailNormalMapScale   UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_DetailNormalMapScale)
++#define _Surface                UNITY_ACCESS_DOTS_INSTANCED_PROP_FROM_MACRO(float  , Metadata_Surface)
++#endif
++
++TEXTURE2D(_ParallaxMap);        SAMPLER(sampler_ParallaxMap);
++TEXTURE2D(_OcclusionMap);       SAMPLER(sampler_OcclusionMap);
++TEXTURE2D(_DetailMask);         SAMPLER(sampler_DetailMask);
++TEXTURE2D(_DetailAlbedoMap);    SAMPLER(sampler_DetailAlbedoMap);
++TEXTURE2D(_DetailNormalMap);    SAMPLER(sampler_DetailNormalMap);
++TEXTURE2D(_MetallicGlossMap);   SAMPLER(sampler_MetallicGlossMap);
++TEXTURE2D(_SpecGlossMap);       SAMPLER(sampler_SpecGlossMap);
++TEXTURE2D(_ClearCoatMap);       SAMPLER(sampler_ClearCoatMap);
++
++#ifdef _SPECULAR_SETUP
++    #define SAMPLE_METALLICSPECULAR(uv) SAMPLE_TEXTURE2D(_SpecGlossMap, sampler_SpecGlossMap, uv)
++#else
++    #define SAMPLE_METALLICSPECULAR(uv) SAMPLE_TEXTURE2D(_MetallicGlossMap, sampler_MetallicGlossMap, uv)
++#endif
++
++half4 SampleMetallicSpecGloss(float2 uv, half albedoAlpha)
++{
++    half4 specGloss;
++
++#ifdef _METALLICSPECGLOSSMAP
++    specGloss = half4(SAMPLE_METALLICSPECULAR(uv));
++    #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++        specGloss.a = albedoAlpha * _Smoothness;
++    #else
++        specGloss.a *= _Smoothness;
++    #endif
++#else // _METALLICSPECGLOSSMAP
++    #if _SPECULAR_SETUP
++        specGloss.rgb = _SpecColor.rgb;
++    #else
++        specGloss.rgb = _Metallic.rrr;
++    #endif
++
++    #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
++        specGloss.a = albedoAlpha * _Smoothness;
++    #else
++        specGloss.a = _Smoothness;
++    #endif
++#endif
++
++    return specGloss;
++}
++
++half SampleOcclusion(float2 uv)
++{
++    #ifdef _OCCLUSIONMAP
++        // TODO: Controls things like these by exposing SHADER_QUALITY levels (low, medium, high)
++        #if defined(SHADER_API_GLES)
++            return SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;
++        #else
++            half occ = SAMPLE_TEXTURE2D(_OcclusionMap, sampler_OcclusionMap, uv).g;
++            return LerpWhiteTo(occ, _OcclusionStrength);
++        #endif
++    #else
++        return half(1.0);
++    #endif
++}
++
++
++// Returns clear coat parameters
++// .x/.r == mask
++// .y/.g == smoothness
++half2 SampleClearCoat(float2 uv)
++{
++#if defined(_CLEARCOAT) || defined(_CLEARCOATMAP)
++    half2 clearCoatMaskSmoothness = half2(_ClearCoatMask, _ClearCoatSmoothness);
++
++#if defined(_CLEARCOATMAP)
++    clearCoatMaskSmoothness *= SAMPLE_TEXTURE2D(_ClearCoatMap, sampler_ClearCoatMap, uv).rg;
++#endif
++
++    return clearCoatMaskSmoothness;
++#else
++    return half2(0.0, 1.0);
++#endif  // _CLEARCOAT
++}
++
++void ApplyPerPixelDisplacement(half3 viewDirTS, inout float2 uv)
++{
++#if defined(_PARALLAXMAP)
++    uv += ParallaxMapping(TEXTURE2D_ARGS(_ParallaxMap, sampler_ParallaxMap), viewDirTS, _Parallax, uv);
++#endif
++}
++
++// Used for scaling detail albedo. Main features:
++// - Depending if detailAlbedo brightens or darkens, scale magnifies effect.
++// - No effect is applied if detailAlbedo is 0.5.
++half3 ScaleDetailAlbedo(half3 detailAlbedo, half scale)
++{
++    // detailAlbedo = detailAlbedo * 2.0h - 1.0h;
++    // detailAlbedo *= _DetailAlbedoMapScale;
++    // detailAlbedo = detailAlbedo * 0.5h + 0.5h;
++    // return detailAlbedo * 2.0f;
++
++    // A bit more optimized
++    return half(2.0) * detailAlbedo * scale - scale + half(1.0);
++}
++
++half3 ApplyDetailAlbedo(float2 detailUv, half3 albedo, half detailMask)
++{
++#if defined(_DETAIL)
++    half3 detailAlbedo = SAMPLE_TEXTURE2D(_DetailAlbedoMap, sampler_DetailAlbedoMap, detailUv).rgb;
++
++    // In order to have same performance as builtin, we do scaling only if scale is not 1.0 (Scaled version has 6 additional instructions)
++#if defined(_DETAIL_SCALED)
++    detailAlbedo = ScaleDetailAlbedo(detailAlbedo, _DetailAlbedoMapScale);
++#else
++    detailAlbedo = half(2.0) * detailAlbedo;
++#endif
++
++    return albedo * LerpWhiteTo(detailAlbedo, detailMask);
++#else
++    return albedo;
++#endif
++}
++
++half3 ApplyDetailNormal(float2 detailUv, half3 normalTS, half detailMask)
++{
++#if defined(_DETAIL)
++#if BUMP_SCALE_NOT_SUPPORTED
++    half3 detailNormalTS = UnpackNormal(SAMPLE_TEXTURE2D(_DetailNormalMap, sampler_DetailNormalMap, detailUv));
++#else
++    half3 detailNormalTS = UnpackNormalScale(SAMPLE_TEXTURE2D(_DetailNormalMap, sampler_DetailNormalMap, detailUv), _DetailNormalMapScale);
++#endif
++
++    // With UNITY_NO_DXT5nm unpacked vector is not normalized for BlendNormalRNM
++    // For visual consistancy we going to do in all cases
++    detailNormalTS = normalize(detailNormalTS);
++
++    return lerp(normalTS, BlendNormalRNM(normalTS, detailNormalTS), detailMask); // todo: detailMask should lerp the angle of the quaternion rotation, not the normals
++#else
++    return normalTS;
++#endif
++}
++
++inline void InitializeStandardLitSurfaceData(float2 uv, out SurfaceData outSurfaceData)
++{
++    half4 albedoAlpha = SampleAlbedoAlpha(uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap));
++    outSurfaceData.alpha = Alpha(albedoAlpha.a, _BaseColor, _Cutoff);
++
++    half4 specGloss = SampleMetallicSpecGloss(uv, albedoAlpha.a);
++    outSurfaceData.albedo = albedoAlpha.rgb * _BaseColor.rgb;
++
++#if _SPECULAR_SETUP
++    outSurfaceData.metallic = half(1.0);
++    outSurfaceData.specular = specGloss.rgb;
++#else
++    outSurfaceData.metallic = specGloss.r;
++    outSurfaceData.specular = half3(0.0, 0.0, 0.0);
++#endif
++
++    outSurfaceData.smoothness = specGloss.a;
++    outSurfaceData.normalTS = SampleNormal(uv, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap), _BumpScale);
++    outSurfaceData.occlusion = SampleOcclusion(uv);
++    outSurfaceData.emission = SampleEmission(uv, _EmissionColor.rgb, TEXTURE2D_ARGS(_EmissionMap, sampler_EmissionMap));
++
++#if defined(_CLEARCOAT) || defined(_CLEARCOATMAP)
++    half2 clearCoat = SampleClearCoat(uv);
++    outSurfaceData.clearCoatMask       = clearCoat.r;
++    outSurfaceData.clearCoatSmoothness = clearCoat.g;
++#else
++    outSurfaceData.clearCoatMask       = half(0.0);
++    outSurfaceData.clearCoatSmoothness = half(0.0);
++#endif
++
++#if defined(_DETAIL)
++    half detailMask = SAMPLE_TEXTURE2D(_DetailMask, sampler_DetailMask, uv).a;
++    float2 detailUv = uv * _DetailAlbedoMap_ST.xy + _DetailAlbedoMap_ST.zw;
++    outSurfaceData.albedo = ApplyDetailAlbedo(detailUv, outSurfaceData.albedo, detailMask);
++    outSurfaceData.normalTS = ApplyDetailNormal(detailUv, outSurfaceData.normalTS, detailMask);
++#endif
++}
++
++#endif // UNIVERSAL_INPUT_SURFACE_PBR_INCLUDED

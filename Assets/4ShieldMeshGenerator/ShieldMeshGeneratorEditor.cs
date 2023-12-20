@@ -15,9 +15,5 @@ public class ShieldMeshGeneratorEditor : Editor
         {
             shieldMeshGenerator.GenerateShieldMesh();
         }
-        if(GUILayout.Button("Clear Custom Mesh Data"))
-        {
-            shieldMeshGenerator.ClearCustomMeshData();
-        }
     }
 }
