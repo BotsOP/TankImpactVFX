@@ -18,7 +18,7 @@ struct HexagonStats
 
 StructuredBuffer<Vertex> _VertexBuffer;
 StructuredBuffer<float2> _VertexParentIndex;
-RWStructuredBuffer<int2> _HexagonStats;
+RWStructuredBuffer<int3> _HexagonStats;
 RWStructuredBuffer<int> _HitTriangles;
 
 float3 _HitPos;
@@ -29,25 +29,21 @@ int _VertexCount;
 
 bool isPointInTriangle(float3 hitPos, float3 v0, float3 v1, float3 v2) 
 {
-    // Compute vectors 
     float3 v0v1 = v1 - v0; 
     float3 v0v2 = v2 - v0; 
     float3 v0p = hitPos - v0;
 
-    // Compute dot products
     float d00 = dot(v0v1, v0v1);
     float d01 = dot(v0v1, v0v2);
     float d11 = dot(v0v2, v0v2);
     float d20 = dot(v0p, v0v1);
     float d21 = dot(v0p, v0v2);
 
-    // Compute barycentric coordinates
     float denom = d00 * d11 - d01 * d01;
     float v = (d11 * d20 - d01 * d21) / denom;
     float w = (d00 * d21 - d01 * d20) / denom;
     float u = 1.0f - v - w;
 
-    // Check if point is in triangle
     return v >= 0.0f && w >= 0.0f && u >= 0.0f;
 }
 
@@ -87,11 +83,15 @@ void HitShield (uint id : SV_DispatchThreadID)
         InterlockedMax(_HexagonStats[parentIndex].x, intHealth);
         
         int intShockWaveHealth = shockWaveHealth * FLOAT_TO_INT;
-        InterlockedMax(_HexagonStats[parentIndex].y, intShockWaveHealth);
+        if(_HexagonStats[parentIndex].z < intShockWaveHealth)
+        {
+            InterlockedMax(_HexagonStats[parentIndex].y, intShockWaveHealth);
+        }
+
+        InterlockedMax(_HexagonStats[parentIndex].z, intShockWaveHealth);
+        
         //_HexagonStats[parentIndex].y = intShockWaveHealth;
     }
-
-    
 }
 
 [numthreads(512,1,1)]
@@ -113,6 +113,7 @@ void UpdateShield (uint id : SV_DispatchThreadID)
     shockWaveHealth += _Damage;
     if (shockWaveHealth >= 2)
     {
+        _HexagonStats[parentIndex].z = 0;
         shockWaveHealth = 0;
     }
     int intShockWaveHealth = shockWaveHealth * FLOAT_TO_INT;

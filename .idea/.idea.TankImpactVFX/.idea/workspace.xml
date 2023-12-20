@@ -4,9 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b04e3e82-7445-4779-ae07-dafa3ffc5ab3" name="Changes" comment="Finished shieldmanager and subsequent systems">
-      <change beforePath="$PROJECT_DIR$/Packages/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Packages/packages-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/Packages/packages-lock.json" afterDir="false" />
+    <list default="true" id="b04e3e82-7445-4779-ae07-dafa3ffc5ab3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TankImpactVFX/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/IShield.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/IShield.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Player/PlayerShoot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Player/PlayerShoot.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/ShieldMesh.asset" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/ShieldMesh.asset.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/ShieldSparks.vfx" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/ShieldSparks.vfx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/ShieldMeshGenerator.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/4ShieldMeshGenerator/ShieldMeshGenerator.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/HexagonShield.shader" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/HexagonShield.shader" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/VFXManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/VFXManager.asset" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,8 +33,10 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.render-pipelines.core@12.1.8/Runtime/Debugging/DebugUpdater.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../VFXTests/Assets/GradientTextureGenerator/Script/GradientGenerator.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/../VFXTests/Assets/Scripts/TextureArrayCreator.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/685c48cf8f0b48abb797275c046dda6a158a00/30/222383e4/RequireComponent.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo">{
@@ -89,10 +101,10 @@
       </option>
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" ignored-value-for-modified-check="29124">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
       <option name="allowRunningInParallel" value="false" />
       <option name="listenPortForConnections" value="false" />
-      <option name="pid" value="29124" />
+      <option name="pid" />
       <option name="projectPathOnTarget" />
       <option name="selectedOptions">
         <list />
@@ -112,7 +124,9 @@
       <workItem from="1702813499140" duration="2681000" />
       <workItem from="1702898157629" duration="178000" />
       <workItem from="1702898350168" duration="5041000" />
-      <workItem from="1702983013915" duration="7027000" />
+      <workItem from="1702983013915" duration="7635000" />
+      <workItem from="1703076398419" duration="2644000" />
+      <workItem from="1703084169807" duration="627000" />
     </task>
     <task id="LOCAL-00001" summary="started work on shield hit compute shader">
       <option name="closed" value="true" />
@@ -146,7 +160,15 @@
       <option name="project" value="LOCAL" />
       <updated>1702994494210</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="started work on vfx">
+      <option name="closed" value="true" />
+      <created>1703003537737</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1703003537737</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -172,6 +194,7 @@
     <MESSAGE value="started work on shield hit compute shader" />
     <MESSAGE value="commit" />
     <MESSAGE value="Finished shieldmanager and subsequent systems" />
-    <option name="LAST_COMMIT_MESSAGE" value="Finished shieldmanager and subsequent systems" />
+    <MESSAGE value="started work on vfx" />
+    <option name="LAST_COMMIT_MESSAGE" value="started work on vfx" />
   </component>
 </project>

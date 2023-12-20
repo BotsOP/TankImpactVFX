@@ -1,12 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.VFX;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(VisualEffect))]
 public class ShieldManager : MonoBehaviour, IShield
 {
     [SerializeField] private float shieldMaxHealth;
+    [SerializeField] private VisualEffect sparkVFX;
     [SerializeField, Range(0, 0.1f)] private float shieldShockwaveSpeed;
     
     private MeshFilter meshFilter;
@@ -20,6 +24,8 @@ public class ShieldManager : MonoBehaviour, IShield
 
     private void OnEnable()
     {
+        UnsafeUtility.SetLeakDetectionMode(NativeLeakDetectionMode.Disabled);
+        
         shieldManagerShader = Resources.Load<ComputeShader>("ShieldManagerShader");
         kernelHitShield = shieldManagerShader.FindKernel("HitShield");
         kernelUpdateShield = shieldManagerShader.FindKernel("UpdateShield");
@@ -31,13 +37,14 @@ public class ShieldManager : MonoBehaviour, IShield
         Mesh mesh = meshFilter.sharedMesh;
         mesh.vertexBufferTarget |= GraphicsBuffer.Target.Structured;
         GraphicsBuffer hexagonShieldStatsBuffer = mesh.GetVertexBuffer(2);
-        int[] hexaStats = new int[mesh.vertexCount * 2];
+        int[] hexaStats = new int[mesh.vertexCount * 3];
         hexagonShieldStatsBuffer.SetData(hexaStats);
+        hexagonShieldStatsBuffer.Dispose();
 
         shockwaveFrameTime = Mathf.CeilToInt(2 / shieldShockwaveSpeed);
     }
     
-    public void HitShield(int _objectID, Vector3 _hitPos, float _damageAmount, float _hitSize)
+    public void HitShield(Vector3 _hitPos, Vector3 _hitNormal, float _damageAmount, float _hitSize)
     {
         shockwaveFrameTimer = shockwaveFrameTime;
         
@@ -66,7 +73,10 @@ public class ShieldManager : MonoBehaviour, IShield
         shieldManagerShader.SetBuffer(kernelHitShield, "_HexagonStats", hexagonShieldStatsBuffer);
         shieldManagerShader.Dispatch(kernelHitShield, x, 1, 1);
         
-        Debug.Log(hitTriangles.GetCounter());
+        if (hitTriangles.GetCounter() > 0)
+        {
+            
+        }
             
         hitTriangles?.Dispose();
         vertexBuffer?.Dispose();

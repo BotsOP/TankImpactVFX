@@ -4,5 +4,5 @@ using UnityEngine;
 
 public interface IShield
 {
-    public void HitShield(int _objectID, Vector3 _hitPos, float _damageAmount, float _hitSize);
+    public void HitShield(Vector3 _hitPos, Vector3 _hitNormal, float _damageAmount, float _hitSize);
 }

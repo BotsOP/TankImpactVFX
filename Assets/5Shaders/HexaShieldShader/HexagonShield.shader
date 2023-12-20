@@ -78,7 +78,7 @@ Shader "Custom/HexagonShield"
                 float4 tangents;
             };
 
-            StructuredBuffer<int2> _HexagonStatsBuffer;
+            StructuredBuffer<int3> _HexagonStatsBuffer;
             StructuredBuffer<Vertex> _Vertices;
             
             float _Displacement;
@@ -141,6 +141,7 @@ Shader "Custom/HexagonShield"
                 float4 color = lerp(_Color, float4(wireFrameColor, 1), closest);
                 color.rgb *= _Emissive;
                 color.a *= i.hexagonStats.y * (1 - floor(i.hexagonStats.x + 0.01));
+                //color.a = 1;
                 return color;
             }
             ENDCG

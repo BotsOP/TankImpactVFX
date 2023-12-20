@@ -22,8 +22,7 @@ public class PlayerShoot : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast (ray, out hit, 100, shieldMask))
             {
-                int instanceID = hit.transform.gameObject.GetInstanceID();
-                hit.transform.GetComponent<IShield>().HitShield(instanceID, hit.point, damageAmount, hitSize);
+                hit.transform.GetComponent<IShield>().HitShield(hit.point, hit.normal, damageAmount, hitSize);
             }
         }
     }
