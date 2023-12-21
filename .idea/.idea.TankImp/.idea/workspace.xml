@@ -4,7 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2253c1ff-f14a-4797-b422-86a7053e7a89" name="Changes" comment="" />
+    <list default="true" id="2253c1ff-f14a-4797-b422-86a7053e7a89" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.TankImp/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TankImp/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/1Scripts/Enemy/ShieldManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/P_Projectile.prefab" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/P_Projectile.prefab" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/ShieldSparks.vfx" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/ShieldSparks.vfx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/shield mesh.asset" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/Shield_Tank/shield mesh.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/3TechArt Test/TechArt_testScene.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/HexagonShield.shader" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/5Shaders/HexaShieldShader/HexagonShield.shader" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Resources/ShieldManagerShader.compute" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -16,6 +25,9 @@
         <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Assets/Bullet.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -62,10 +74,10 @@
       </option>
       <method v="2" />
     </configuration>
-    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost">
+    <configuration name="Attach to Unity Editor" type="UNITY_DEBUG_RUN_CONFIGURATION" factoryName="Unity Debug" show_console_on_std_err="false" show_console_on_std_out="false" port="50000" address="localhost" ignored-value-for-modified-check="31060">
       <option name="allowRunningInParallel" value="false" />
       <option name="listenPortForConnections" value="false" />
-      <option name="pid" />
+      <option name="pid" value="31060" />
       <option name="projectPathOnTarget" />
       <option name="selectedOptions">
         <list />
@@ -85,6 +97,8 @@
       <workItem from="1702732779914" duration="8995000" />
       <workItem from="1702843521356" duration="8773000" />
       <workItem from="1703098608583" duration="129000" />
+      <workItem from="1703098802139" duration="4999000" />
+      <workItem from="1703155345667" duration="6352000" />
     </task>
     <task id="LOCAL-00001" summary="fixed meshes not saving their uvs properly">
       <created>1702652088206</created>
@@ -107,7 +121,14 @@
       <option name="project" value="LOCAL" />
       <updated>1702853396760</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="commit">
+      <created>1703099362700</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1703099362700</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -132,7 +153,8 @@
     <MESSAGE value="fixed meshes not saving their uvs properly" />
     <MESSAGE value="Added start of wireframe hexagonal shader" />
     <MESSAGE value="more work on hexagonal shader" />
-    <option name="LAST_COMMIT_MESSAGE" value="more work on hexagonal shader" />
+    <MESSAGE value="commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="commit" />
   </component>
   <component name="XDebuggerManager">
     <pin-to-top-manager>

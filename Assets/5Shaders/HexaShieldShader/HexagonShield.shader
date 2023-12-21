@@ -42,14 +42,14 @@ Shader "Custom/HexagonShield"
                 float2 uv : TEXCOORD0;
                 UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
-                float2 hexagonStats : TEXCOORD1;
+                float3 hexagonStats : TEXCOORD1;
             };
 
             struct g2f
             {
                 float4 pos : SV_POSITION;
                 float3 barycentric : TEXCOORD0;
-                float2 hexagonStats : TEXCOORD1;
+                float3 hexagonStats : TEXCOORD1;
             };
 
             float easeInOut(float x)
@@ -91,17 +91,17 @@ Shader "Custom/HexagonShield"
                
                 o.uv = v.uv;
                 
-                float2 hexaStatsInterpolate;
+                float3 hexaStatsInterpolate;
 
                 int parentIndex = (int)v.uv.x;
-                int2 hexaStats = _HexagonStatsBuffer[parentIndex];
+                int3 hexaStats = _HexagonStatsBuffer[parentIndex];
                 float alpha = 1 - abs((hexaStats.y / FLOAT_TO_INT) - 1);
                 hexaStatsInterpolate.y = saturate(easeInOutElastic(alpha));
                 hexaStatsInterpolate.x = saturate(hexaStats.x / FLOAT_TO_INT);
                 
                 o.hexagonStats = hexaStatsInterpolate;
 
-                float3 newPos = v.vertex + _Vertices[parentIndex].normal * _Displacement * hexaStatsInterpolate.y ;
+                float3 newPos = v.vertex + _Vertices[parentIndex].normal * _Displacement * hexaStatsInterpolate.y;
                 o.vertex = UnityObjectToClipPos(newPos);
                 
                 UNITY_TRANSFER_FOG(o,o.vertex);
